@@ -1,0 +1,10 @@
+services:
+  web:
+    image: httpd:2.4-alpine
+    container_name: eyedrops-timer-web
+    ports:
+      - "8080:80"
+    volumes:
+      # 開発時は public をマウントして即時反映
+      - ./public:/usr/local/apache2/htdocs:ro
+    restart: unless-stopped

@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>点眼タイマー 画面仕様書</title>
+  <style>
+    :root {
+      --bg: #f4f7fb;
+      --surface: #ffffff;
+      --surface-alt: #f8fafc;
+      --border: #dbe4ef;
+      --text: #1e293b;
+      --text-muted: #64748b;
+      --primary: #0284c7;
+      --primary-light: #e0f2fe;
+      --accent: #0d9488;
+      --accent-light: #ccfbf1;
+      --warn: #d97706;
+      --warn-light: #fef3c7;
+      --danger: #dc2626;
+      --danger-light: #fee2e2;
+      --radius: 12px;
+      --shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", Meiryo, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.65;
+    }
+
+    /* レイアウト */
+    .layout {
+      display: grid;
+      grid-template-columns: 260px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 24px 18px;
+    }
+
+    .sidebar h1 {
+      font-size: 1.1rem;
+      margin: 0 0 4px;
+      color: #ffffff;
+    }
+
+    .sidebar .meta {
+      font-size: 0.78rem;
+      color: #94a3b8;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .nav-group {
+      margin-bottom: 18px;
+    }
+
+    .nav-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #64748b;
+      margin-bottom: 8px;
+      font-weight: 700;
+    }
+
+    .sidebar a {
+      display: block;
+      color: #cbd5e1;
+      text-decoration: none;
+      font-size: 0.88rem;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-bottom: 2px;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .sidebar a:hover {
+      background: #1e293b;
+      color: #ffffff;
+    }
+
+    .main {
+      padding: 32px 40px 64px;
+      max-width: 1180px;
+    }
+
+    .doc-header {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 28px;
+    }
+
+    .doc-header h2 {
+      margin: 0 0 8px;
+      font-size: 1.6rem;
+    }
+
+    .badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: var(--primary-light);
+      color: var(--primary);
+    }
+
+    .badge.accent {
+      background: var(--accent-light);
+      color: var(--accent);
+    }
+
+    .badge.warn {
+      background: var(--warn-light);
+      color: var(--warn);
+    }
+
+    section.card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      box-shadow: var(--shadow);
+      margin-bottom: 28px;
+    }
+
+    section.card h3 {
+      margin: 0 0 14px;
+      font-size: 1.25rem;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      border-bottom: 2px solid var(--bg);
+      padding-bottom: 10px;
+    }
+
+    .scr-id {
+      font-size: 0.8rem;
+      background: var(--primary);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      font-weight: 700;
+    }
+
+    h4 {
+      margin: 20px 0 10px;
+      font-size: 1rem;
+      color: #0f172a;
+    }
+
+    /* 遷移フロー図 */
+    .flow-diagram {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 12px;
+      padding: 18px;
+      background: var(--surface-alt);
+      border: 1px dashed var(--border);
+      border-radius: 10px;
+      margin: 12px 0;
+    }
+
+    .flow-node {
+      background: var(--surface);
+      border: 2px solid var(--primary);
+      border-radius: 10px;
+      padding: 10px 14px;
+      min-width: 150px;
+      text-align: center;
+      font-size: 0.86rem;
+      font-weight: 600;
+    }
+
+    .flow-node small {
+      display: block;
+      font-weight: 400;
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    .flow-arrow {
+      font-weight: 700;
+      color: var(--primary);
+      font-size: 1.1rem;
+    }
+
+    /* 2カラム：ワイヤーフレーム + 要点 */
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 24px;
+      align-items: start;
+      margin-top: 14px;
+    }
+
+    /* スマホ風モック枠 */
+    .wireframe {
+      background: #f1f5f9;
+      border: 2px solid #cbd5e1;
+      border-radius: 18px;
+      padding: 14px;
+      font-size: 0.82rem;
+    }
+
+    .wf-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-weight: 700;
+      padding-bottom: 10px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #cbd5e1;
+    }
+
+    .wf-card {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .wf-btn {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 0.76rem;
+      font-weight: 600;
+      border: 1px solid #94a3b8;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .wf-btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+
+    .wf-btn.danger {
+      background: var(--danger-light);
+      border-color: #fca5a5;
+      color: var(--danger);
+    }
+
+    .wf-btn.warn {
+      background: var(--warn-light);
+      border-color: #fcd34d;
+      color: var(--warn);
+    }
+
+    .wf-progress {
+      height: 12px;
+      background: #e2e8f0;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 8px 0;
+    }
+
+    .wf-progress > span {
+      display: block;
+      height: 100%;
+      width: 65%;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+    }
+
+    .wf-timer {
+      font-size: 2.1rem;
+      font-weight: 800;
+      text-align: center;
+      letter-spacing: 0.04em;
+      margin: 8px 0;
+      color: #0f172a;
+    }
+
+    .wf-input {
+      background: #f8fafc;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      padding: 6px 8px;
+      margin: 4px 0 8px;
+      color: #475569;
+    }
+
+    /* テーブル */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 16px;
+      font-size: 0.88rem;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 9px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--surface-alt);
+      font-weight: 700;
+      color: #0f172a;
+    }
+
+    code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: Consolas, Monaco, monospace;
+      font-size: 0.84em;
+      color: #0f172a;
+    }
+
+    pre {
+      background: #0f172a;
+      color: #e2e8f0;
+      padding: 14px 16px;
+      border-radius: 10px;
+      overflow-x: auto;
+      font-size: 0.83rem;
+      line-height: 1.5;
+    }
+
+    .note {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 10px 14px;
+      border-radius: 6px;
+      font-size: 0.88rem;
+      margin: 10px 0;
+    }
+
+    .note.warn {
+      background: var(--warn-light);
+      border-left-color: var(--warn);
+    }
+
+    @media (max-width: 960px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .sidebar {
+        position: static;
+        height: auto;
+      }
+      .main {
+        padding: 20px 16px 48px;
+      }
+      .spec-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <h1>点眼タイマー 画面仕様書</h1>
+      <div class="meta">
+        対象: ブラウザー向けWebアプリ<br>
+        参照元: docs/plan.md
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-title">概要</div>
+        <a href="#overview">1. 画面一覧と遷移フロー</a>
+        <a href="#common-rules">2. 共通仕様・技術制約</a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-title">各画面仕様</div>
+        <a href="#scr-01">SCR-01 ワークアウト一覧</a>
+        <a href="#scr-02">SCR-02 作成・編集</a>
+        <a href="#scr-03">SCR-03 開始前確認・音声設定</a>
+        <a href="#scr-04">SCR-04 タイマー実行</a>
+        <a href="#scr-05">SCR-05 完了・カレンダー保存</a>
+      </div>
+
+      <div class="nav-group">
+        <div class="nav-title">データ・外部連携</div>
+        <a href="#storage-schema">3. localStorage スキーマ</a>
+        <a href="#calendar-api">4. Googleカレンダー連携</a>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="doc-header">
+        <h2>点眼タイマー 画面仕様書</h2>
+        <p>
+          点眼薬と点眼前後の工程をワークアウトとして管理し、音声ガイド付きタイマーで順番に実行、完了後にGoogleカレンダーへ記録するWebアプリの画面仕様書です。
+        </p>
+        <div class="badges">
+          <span class="badge">ブラウザー完結 (localStorage)</span>
+          <span class="badge accent">Web Speech API + 効果音フォールバック</span>
+          <span class="badge">Google OAuth 正規連携 (primary固定)</span>
+        </div>
+      </div>
+
+      <!-- 1. 概要・遷移図 -->
+      <section id="overview" class="card">
+        <h3>1. 画面一覧と遷移フロー</h3>
+        <div class="flow-diagram">
+          <div class="flow-node">SCR-01<br>ワークアウト一覧<small>作成/編集/削除/並替<br>未保存履歴バナー</small></div>
+          <span class="flow-arrow">⇄</span>
+          <div class="flow-node">SCR-02<br>作成・編集<small>薬・工程設定<br>D&amp;D並替/検証</small></div>
+        </div>
+        <div class="flow-diagram">
+          <div class="flow-node">SCR-01<br>ワークアウト選択</div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">SCR-03<br>開始前確認・音声設定<small>工程確認/音声テスト<br>音声アンロック</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">SCR-04<br>タイマー実行<small>進行/一時停止/スキップ<br>中断→一覧・やり直し</small></div>
+          <span class="flow-arrow">→</span>
+          <div class="flow-node">SCR-05<br>完了・カレンダー保存<small>primary登録/再試行<br>二重登録防止</small></div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>画面ID</th>
+              <th>画面名</th>
+              <th>主な役割</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>SCR-01</code></td>
+              <td>ワークアウト一覧画面</td>
+              <td>保存済みワークアウトの一覧表示、ドラッグ＆ドロップ並替、削除、新規作成／編集／実行への遷移。未保存の実行結果がある場合は再試行導線を表示。</td>
+            </tr>
+            <tr>
+              <td><code>SCR-02</code></td>
+              <td>ワークアウト作成・編集画面</td>
+              <td>ワークアウト名、点眼薬の追加・削除・並替、各工程（準備／直後の瞑想／次の点眼までの待機）の表示名と秒数設定、入力検証。</td>
+            </tr>
+            <tr>
+              <td><code>SCR-03</code></td>
+              <td>開始前確認・音声設定画面</td>
+              <td>選択ワークアウトの全工程確認、音声・速度（1.0x / 1.15x / 1.30x）の設定と「音声テスト」、開始操作による音声合成アンロック。</td>
+            </tr>
+            <tr>
+              <td><code>SCR-04</code></td>
+              <td>タイマー実行画面</td>
+              <td>工程の順次実行、視覚的プログレス表示、音声ガイド・カウントダウン、一時停止・再開・中断・工程スキップ、スリープ抑止。</td>
+            </tr>
+            <tr>
+              <td><code>SCR-05</code></td>
+              <td>完了・Googleカレンダー保存画面</td>
+              <td>ワークアウト名・開始日時・終了日時の表示、Google認証と <code>primary</code> カレンダーへの登録、失敗時の再試行、二重登録防止。</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
+      <!-- 2. 共通仕様 -->
+      <section id="common-rules" class="card">
+        <h3>2. 共通仕様・技術制約</h3>
+        <ul>
+          <li><strong>タイマー精度（背景スロットリング対策）</strong>: 残り時間は <code>setInterval</code> の減算に頼らず、工程開始時刻（再開時は残り時間を基準とした仮想開始時刻）と現在時刻（<code>Date.now()</code>）の差分から算出する。</li>
+          <li><strong>画面スリープ抑止</strong>: <code>SCR-04</code> 実行中は Screen Wake Lock API（<code>navigator.wakeLock.request('screen')</code>）を要求し、タブ復帰時にも再取得を試みる。非対応ブラウザーではエラーとせず通常動作を継続する。</li>
+          <li><strong>音声アンロック</strong>: モバイルブラウザー対策として、<code>SCR-03</code> の「開始」ボタン押下（ユーザー操作）内で <code>speechSynthesis</code> を初回発話してアンロックする。</li>
+          <li><strong>音声不可・消音時のフォールバック</strong>: <code>speechSynthesis</code> 非対応または無音環境でもタイマーを止めず、視覚的な状態変化・プログレス表示に加え、Web Audio API による簡易ビープ音で通知する。</li>
+        </ul>
+      </section>
+
+      <!-- SCR-01 -->
+      <section id="scr-01" class="card">
+        <h3><span class="scr-id">SCR-01</span> ワークアウト一覧画面</h3>
+        <div class="spec-grid">
+          <div class="wireframe">
+            <div class="wf-bar">
+              <span>点眼タイマー</span>
+              <span class="wf-btn primary">＋ 新規作成</span>
+            </div>
+            <div class="wf-card" style="background:#fef3c7; border-color:#fcd34d;">
+              <strong>未保存の完了履歴が1件あります</strong><br>
+              <small>朝の点眼 (08:10〜08:16)</small><br>
+              <span class="wf-btn warn" style="margin-top:6px;">保存を再試行</span>
+            </div>
+            <div class="wf-card">
+              <div style="display:flex; justify-content:space-between;">
+                <strong>☰ 朝の点眼セット</strong>
+                <small>薬2種 / 計5分30秒</small>
+              </div>
+              <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                <span class="wf-btn primary">確認して開始</span>
+                <span class="wf-btn">編集</span>
+                <span class="wf-btn danger">削除</span>
+              </div>
+            </div>
+            <div class="wf-card">
+              <div style="display:flex; justify-content:space-between;">
+                <strong>☰ 夜の点眼セット</strong>
+                <small>薬1種 / 計1分20秒</small>
+              </div>
+              <div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap;">
+                <span class="wf-btn primary">確認して開始</span>
+                <span class="wf-btn">編集</span>
+                <span class="wf-btn danger">削除</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4>画面要素・操作仕様</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>要素</th>
+                  <th>種別</th>
+                  <th>動作・仕様</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>未保存履歴バナー</td>
+                  <td>通知カード</td>
+                  <td><code>localStorage</code> に未保存の実行結果がある場合のみ表示。「保存を再試行」で <code>SCR-05</code> へ遷移。</td>
+                </tr>
+                <tr>
+                  <td>新規作成ボタン</td>
+                  <td>ボタン</td>
+                  <td><code>SCR-02</code>（新規モード）へ遷移する。</td>
+                </tr>
+                <tr>
+                  <td>ワークアウトカード</td>
+                  <td>リスト項目</td>
+                  <td>ドラッグ＆ドロップ（ハンドル <code>☰</code>）で表示順を並び替え、即座に <code>localStorage</code> へ保存。</td>
+                </tr>
+                <tr>
+                  <td>確認して開始</td>
+                  <td>ボタン</td>
+                  <td>対象ワークアウトを選択して <code>SCR-03</code> へ遷移する。</td>
+                </tr>
+                <tr>
+                  <td>編集 / 削除</td>
+                  <td>ボタン</td>
+                  <td>「編集」は <code>SCR-02</code> へ遷移。「削除」は確認ダイアログ後に一覧と <code>localStorage</code> から削除。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCR-02 -->
+      <section id="scr-02" class="card">
+        <h3><span class="scr-id">SCR-02</span> ワークアウト作成・編集画面</h3>
+        <div class="spec-grid">
+          <div class="wireframe">
+            <div class="wf-bar">
+              <span>← 戻る</span>
+              <span>ワークアウト編集</span>
+              <span class="wf-btn primary">保存</span>
+            </div>
+            <div>ワークアウト名（必須）</div>
+            <div class="wf-input">朝の点眼セット</div>
+
+            <div class="wf-card">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <strong>☰ 薬1: ヒアルロン酸</strong>
+                <span class="wf-btn danger">薬削除</span>
+              </div>
+              <small>準備（表示名 ＋ 時間ボタン）</small>
+              <div style="display:flex; gap:6px; align-items:center; margin:4px 0 8px;">
+                <div class="wf-input" style="flex:1; margin:0;">手を洗い準備</div>
+                <span class="wf-btn">20秒</span>
+              </div>
+              <small>直後の瞑想（表示名 ＋ 時間ボタン）</small>
+              <div style="display:flex; gap:6px; align-items:center; margin:4px 0 8px;">
+                <div class="wf-input" style="flex:1; margin:0;">目を閉じて待機</div>
+                <span class="wf-btn">1分</span>
+              </div>
+              <small>次の点眼までの待機（表示名 ＋ 時間ボタン）</small>
+              <div style="display:flex; gap:6px; align-items:center; margin:4px 0 8px;">
+                <div class="wf-input" style="flex:1; margin:0;">次の薬まで待機</div>
+                <span class="wf-btn primary">5分</span>
+              </div>
+            </div>
+
+            <div class="wf-card">
+              <div style="display:flex; justify-content:space-between; margin-bottom:6px;">
+                <strong>☰ 薬2: 抗菌目薬（最後）</strong>
+                <span class="wf-btn danger">薬削除</span>
+              </div>
+              <small>準備 / 直後の瞑想</small>
+              <div class="wf-input">準備 10秒 ／ 瞑想 60秒</div>
+              <small style="color:#64748b;">※ 最後の薬には待機工程を設けません</small>
+            </div>
+            <span class="wf-btn">＋ 点眼薬を追加</span>
+
+            <div class="wf-card" style="margin-top:12px; border:2px solid var(--primary); background:#f8fafc;">
+              <div style="font-weight:700; margin-bottom:6px; color:var(--primary);">【時間設定ダイアログ】（時間ボタン押下で表示）</div>
+              <small>テンプレートから選択</small>
+              <div style="display:flex; flex-wrap:wrap; gap:4px; margin:4px 0 8px;">
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">5秒</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">10秒</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">15秒</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">30秒</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">1分</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">1.5分</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">2分</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">3分</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">4分</span>
+                <span class="wf-btn primary" style="padding:2px 6px; font-size:0.7rem;">5分</span>
+                <span class="wf-btn" style="padding:2px 6px; font-size:0.7rem;">10分</span>
+              </div>
+              <small>手入力（数値 ＋ 秒/分）</small>
+              <div class="wf-input" style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                <span>5</span>
+                <span>[ 分 ▾ ]（300秒）</span>
+              </div>
+              <div style="display:flex; justify-content:flex-end; gap:6px;">
+                <span class="wf-btn">キャンセル</span>
+                <span class="wf-btn primary">決定</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4>入力ルール・バリデーション</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>項目</th>
+                  <th>制約・ルール</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>ワークアウト名</td>
+                  <td>必須入力（空白のみ不可）。未入力時はエラー表示し保存不可。</td>
+                </tr>
+                <tr>
+                  <td>点眼薬リスト</td>
+                  <td>1件以上必須。ドラッグ＆ドロップで順序を変更可能。並び替え後は「最後の薬」の待機工程有無を自動再判定する。</td>
+                </tr>
+                <tr>
+                  <td>薬名</td>
+                  <td>必須入力。音声ガイドの薬名読み上げに使用。</td>
+                </tr>
+                <tr>
+                  <td>各工程</td>
+                  <td>「準備」「直後の瞑想」「次の点眼までの待機」を設定。表示名は必須。<br>時間は表示名の右にボタン表示（例：<code>20秒</code>、<code>5分</code>）し、ボタン押下で<strong>時間設定ダイアログ</strong>を開く。ダイアログ内で<strong>テンプレートボタン選択</strong>（<code>5秒</code>, <code>10秒</code>, <code>15秒</code>, <code>30秒</code>, <code>1分</code>, <code>1.5分</code>, <code>2分</code>, <code>3分</code>, <code>4分</code>, <code>5分</code>, <code>10分</code>）または<strong>数値手入力</strong>（数値＋<code>秒 / 分</code> 単位切替）を行い反映する。内部保存は秒換算（<code>0</code> 秒以上の整数、<code>0</code> 秒は省略扱い、負数や不正値はエラー）。</td>
+                </tr>
+                <tr>
+                  <td>最後の点眼薬ルール</td>
+                  <td>末尾の点眼薬には「次の点眼までの待機」を表示・設定・保存しない。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCR-03 -->
+      <section id="scr-03" class="card">
+        <h3><span class="scr-id">SCR-03</span> 開始前確認・音声設定画面</h3>
+        <div class="spec-grid">
+          <div class="wireframe">
+            <div class="wf-bar">
+              <span>← 一覧へ</span>
+              <span>開始前確認</span>
+              <span></span>
+            </div>
+            <div class="wf-card">
+              <strong>朝の点眼セット</strong><br>
+              <small>1. ヒアルロン酸（準備20秒 → 点眼 → 瞑想60秒 → 待機300秒）</small><br>
+              <small>2. 抗菌目薬（準備10秒 → 点眼 → 瞑想60秒）</small>
+            </div>
+            <div class="wf-card">
+              <strong>音声ガイド設定</strong><br>
+              <small>音声</small>
+              <div class="wf-input">Google 日本語 (ja-JP) ▾</div>
+              <small>読み上げ速度</small>
+              <div style="display:flex; gap:6px; margin:6px 0 10px;">
+                <span class="wf-btn primary">普通 1.0x</span>
+                <span class="wf-btn">やや早く 1.15x</span>
+                <span class="wf-btn">早く 1.30x</span>
+              </div>
+              <span class="wf-btn">🔊 音声テスト</span>
+            </div>
+            <div style="text-align:center; margin-top:12px;">
+              <span class="wf-btn primary" style="width:100%; padding:10px; font-size:0.92rem;">タイマーを開始する</span>
+            </div>
+          </div>
+
+          <div>
+            <h4>画面要素・音声設定仕様</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>要素</th>
+                  <th>動作・仕様</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>工程プレビュー</td>
+                  <td>0秒で省略される工程を除き、実行順と合計予定時間を一覧表示する。</td>
+                </tr>
+                <tr>
+                  <td>音声セレクト</td>
+                  <td>利用可能な音声を取得し、初回または復元対象がない場合は <code>Google 日本語</code> をデフォルト選択。変更時は即座に <code>localStorage</code> へ保存。</td>
+                </tr>
+                <tr>
+                  <td>読み上げ速度</td>
+                  <td><code>1.0</code>（普通）／<code>1.15</code>（やや早く）／<code>1.30</code>（早く）の3択。選択状態は <code>localStorage</code> に保存し次回起動時に復元。</td>
+                </tr>
+                <tr>
+                  <td>音声テストボタン</td>
+                  <td>現在選択中の音声・速度でサンプル文（例：「ヒアルロン酸、準備、20秒、開始します」）を再生し、音声イメージを確認できる。</td>
+                </tr>
+                <tr>
+                  <td>タイマーを開始する</td>
+                  <td>クリックイベント内で音声合成をアンロックし、Wake Lock 取得を試みたうえで <code>SCR-04</code> へ遷移する。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCR-04 -->
+      <section id="scr-04" class="card">
+        <h3><span class="scr-id">SCR-04</span> タイマー実行画面</h3>
+        <div class="spec-grid">
+          <div class="wireframe">
+            <div class="wf-bar">
+              <span>薬 1 / 2</span>
+              <span>Wake Lock 有効</span>
+            </div>
+            <div class="wf-card" style="text-align:center;">
+              <div style="color:var(--primary); font-weight:700;">ヒアルロン酸</div>
+              <div style="font-size:1.1rem; font-weight:700; margin-top:2px;">準備（手を洗い準備）</div>
+              <div class="wf-timer">00:15</div>
+              <div class="wf-progress"><span></span></div>
+              <small>全体進捗: 1 / 5 工程</small>
+            </div>
+            <div style="display:flex; gap:8px; justify-content:center; margin-top:10px;">
+              <span class="wf-btn warn">⏸ 一時停止</span>
+              <span class="wf-btn">⏭ この工程をスキップ</span>
+            </div>
+            <div class="wf-card" style="margin-top:12px; background:#f8fafc;">
+              <small><strong>【一時停止中の表示メニュー】</strong></small><br>
+              <div style="display:flex; gap:6px; margin-top:6px; flex-wrap:wrap;">
+                <span class="wf-btn primary">▶ 再開</span>
+                <span class="wf-btn">↺ 最初からやり直す</span>
+                <span class="wf-btn danger">一覧へ戻る</span>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <h4>進行・音声ガイド・状態制御</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>タイミング / 操作</th>
+                  <th>画面・音声・状態遷移の仕様</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>点眼薬・工程開始時</td>
+                  <td>点眼薬の開始時は「薬名」、各工程では「工程名・設定時間・開始」を読み上げる（例：「ヒアルロン酸、準備、20秒、開始」）。視覚的なプログレスバーも更新。</td>
+                </tr>
+                <tr>
+                  <td>準備完了 → 点眼実施</td>
+                  <td>「準備」工程の終了時、薬名と点眼実施をガイドする（例：「準備完了。ヒアルロン酸を点眼してください」）。その後「直後の瞑想」工程へ進む。</td>
+                </tr>
+                <tr>
+                  <td>カウントダウン（5秒前）</td>
+                  <td>残り5秒から「5、4、3、2、1」と読み上げる。設定時間が5秒未満の短い工程は、その設定秒数（例：3秒なら「3、2、1」）から開始。<strong>前の発話が再生中の場合は <code>cancel()</code> で割り込む。</strong></td>
+                </tr>
+                <tr>
+                  <td>工程終了時</td>
+                  <td>「工程名、完了」を読み上げ、次の0秒より大きい工程へ遷移する。全工程終了で <code>SCR-05</code> へ遷移。</td>
+                </tr>
+                <tr>
+                  <td>一時停止 / 再開 / 中断</td>
+                  <td>一時停止時はカウント・音声を停止し、「再開」「最初からやり直す」「一覧へ戻る」を表示。中断時は完了画面やカレンダー保存へ進まない。</td>
+                </tr>
+                <tr>
+                  <td>工程スキップ</td>
+                  <td>再生中の音声をキャンセルし、現在工程を即時完了させて次の工程へ進む（準備スキップ時は点眼ガイドを挟むか次工程へ進む）。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- SCR-05 -->
+      <section id="scr-05" class="card">
+        <h3><span class="scr-id">SCR-05</span> 完了・Googleカレンダー保存画面</h3>
+        <div class="spec-grid">
+          <div class="wireframe">
+            <div class="wf-bar">
+              <span>ワークアウト完了</span>
+              <span class="wf-btn">一覧へ</span>
+            </div>
+            <div class="wf-card">
+              <div style="font-weight:700; font-size:1rem; color:var(--accent);">✓ すべての工程が完了しました</div>
+              <hr style="border:none; border-top:1px solid #e2e8f0; margin:8px 0;">
+              <small>ワークアウト名</small>
+              <div><strong>朝の点眼セット</strong></div>
+              <small>開始日時 〜 完了日時</small>
+              <div>2026/11/22 08:10 〜 08:16</div>
+              <small>保存状態</small>
+              <div><span class="badge warn">未保存（ブラウザに一時保存中）</span></div>
+            </div>
+            <div style="text-align:center; margin-top:10px;">
+              <span class="wf-btn primary" style="width:100%; padding:10px;">Googleカレンダーに保存</span>
+            </div>
+          </div>
+
+          <div>
+            <h4>保存・保護・エラー処理仕様</h4>
+            <table>
+              <thead>
+                <tr>
+                  <th>機能・状態</th>
+                  <th>仕様</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>未保存履歴の一時保存</td>
+                  <td><code>SCR-04</code> 完了時点で実行結果（開始日時・終了日時・保存状態=未保存）を <code>localStorage</code> に保存。リロード後も <code>SCR-01</code> から再試行可能。</td>
+                </tr>
+                <tr>
+                  <td>保存ボタン押下</td>
+                  <td>Google Identity Services で認証後、<code>primary</code> カレンダーへ開始時間・終了時間付きの予定を登録。処理中はボタンを無効化し二重送信を防止。</td>
+                </tr>
+                <tr>
+                  <td>二重登録防止</td>
+                  <td>保存済みフラグ（<code>saved</code>）と処理中ロック（<code>saving</code>）を管理し、保存成功後はボタンを「保存済み」表示へ切り替える。</td>
+                </tr>
+                <tr>
+                  <td>エラー時の再試行</td>
+                  <td>認証拒否・通信失敗時は具体的なエラーメッセージを表示し、一時保存データを維持したまま再試行ボタンを有効化する。</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. localStorage スキーマ -->
+      <section id="storage-schema" class="card">
+        <h3>3. localStorage スキーマ設計（拡張性維持）</h3>
+        <p>将来の項目追加や構造変更に備え、ルートオブジェクトに <code>schemaVersion</code> を保持します。</p>
+        <pre>{
+  "schemaVersion": 1,
+  "workouts": [
+    {
+      "id": "wo_001",
+      "name": "朝の点眼セット",
+      "order": 0,
+      "createdAt": "2026-11-22T08:00:00.000Z",
+      "updatedAt": "2026-11-22T08:00:00.000Z",
+      "medications": [
+        {
+          "id": "med_001",
+          "name": "ヒアルロン酸",
+          "steps": [
+            { "type": "prepare", "label": "手を洗い準備", "durationSec": 20 },
+            { "type": "meditation", "label": "目を閉じて待機", "durationSec": 60 },
+            { "type": "wait", "label": "次の薬まで待機", "durationSec": 300 }
+          ]
+        }
+      ]
+    }
+  ],
+  "voiceSettings": {
+    "voiceName": "Google 日本語",
+    "rate": 1.0
+  },
+  "pendingResults": [
+    {
+      "executionId": "exec_20261122_081600",
+      "workoutName": "朝の点眼セット",
+      "startedAt": "2026-11-22T08:10:00.000Z",
+      "completedAt": "2026-11-22T08:16:00.000Z",
+      "calendarStatus": "unsaved"
+    }
+  ]
+}</pre>
+      </section>
+
+      <!-- 4. Googleカレンダー連携 -->
+      <section id="calendar-api" class="card">
+        <h3>4. Googleカレンダー連携仕様</h3>
+        <div class="note">
+          <strong>運用前提</strong>: Google Cloud の OAuth 同意画面を「本番（公開）」として正規の Google カレンダー連携を行います。クライアントシークレット等の秘密情報はブラウザーに含めません（Google Cloud 側の設定・審査手順は <code>docs/google_calendar_setup.md</code> を参照）。
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>項目</th>
+              <th>内容</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>認証方式</td>
+              <td>Google Identity Services (GIS) によるトークン取得</td>
+            </tr>
+            <tr>
+              <td>登録先カレンダー</td>
+              <td><code>primary</code> 固定</td>
+            </tr>
+            <tr>
+              <td>登録イベント内容</td>
+              <td><code>summary</code>: ワークアウト名 ／ <code>start.dateTime</code>: 開始日時 ／ <code>end.dateTime</code>: 完了日時</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+    </main>
+  </div>
+</body>
+</html>

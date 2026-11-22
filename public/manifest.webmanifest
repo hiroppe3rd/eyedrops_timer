@@ -1,0 +1,18 @@
+{
+  "name": "点眼タイマー",
+  "short_name": "点眼タイマー",
+  "description": "音声ガイド付きで点眼ワークアウトを実行し、Googleカレンダーへ記録するタイマーアプリ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#0284c7",
+  "icons": [
+    {
+      "src": "./assets/logo.jpg",
+      "sizes": "1024x1024",
+      "type": "image/jpeg",
+      "purpose": "any"
+    }
+  ]
+}
