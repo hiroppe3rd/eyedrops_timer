@@ -613,3 +613,150 @@ body {
   gap: 6px;
   flex-shrink: 0;
 }
+
+/* 行程複製・テンプレート選択・備考 */
+.med-card-actions {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.edit-add-actions {
+  margin-top: 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.med-note-text {
+  font-size: 0.84rem;
+  margin-top: 2px;
+}
+
+.timer-med-note {
+  font-size: 0.88rem;
+  margin-top: 4px;
+}
+
+.modal-dialog-wide {
+  max-width: 560px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-tabs {
+  display: flex;
+  gap: 6px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 10px;
+  margin-bottom: 12px;
+}
+
+.modal-tab {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface-alt);
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.modal-tab.is-active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.picker-search-wrap {
+  margin-bottom: 10px;
+}
+
+.picker-list {
+  flex: 1;
+  min-height: 160px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.picker-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface);
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.picker-item:hover {
+  border-color: var(--primary);
+}
+
+.picker-item.is-selected {
+  border-color: var(--primary);
+  background: #f0f9ff;
+}
+
+.picker-checkbox {
+  margin-top: 3px;
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary);
+  flex-shrink: 0;
+}
+
+.picker-item-body {
+  min-width: 0;
+  flex: 1;
+}
+
+.picker-item-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.picker-item-sub {
+  font-size: 0.83rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.picker-item-steps {
+  font-size: 0.82rem;
+  color: var(--primary);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.picker-item-sources {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 5px;
+}
+
+.picker-source-badge {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 1px 8px;
+}
+
+.picker-empty {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}

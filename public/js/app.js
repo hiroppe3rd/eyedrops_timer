@@ -165,6 +165,7 @@ function render() {
 
   if (appState.currentScreen === "SCR-02") {
     renderRoutineEditView(appContainer, appState.editingRoutine, appState.editingIsNew, {
+      existingRoutines: appState.data.routines,
       onCancel: () => {
         appState.editingRoutine = null;
         appState.currentScreen = "SCR-01";

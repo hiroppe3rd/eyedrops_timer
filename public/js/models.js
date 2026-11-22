@@ -20,6 +20,54 @@ export const DURATION_TEMPLATES = [
   { label: "10分", seconds: 600 },
 ];
 
+// 定義済みの点眼薬テンプレート
+export const MEDICATION_TEMPLATES = [
+  {
+    templateId: "tpl_levo",
+    title: "レポフロキサシン（術前・術後 1日4回）",
+    name: "レポフロキサシン",
+    note: "術前・術後 1日4回",
+    steps: [
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+    ],
+  },
+  {
+    templateId: "tpl_bromfenac",
+    title: "プロムフェナクNa（術前・術後 1日2回）",
+    name: "プロムフェナクNa",
+    note: "術前・術後 1日2回",
+    steps: [
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+    ],
+  },
+  {
+    templateId: "tpl_sanbetason",
+    title: "サンベタゾン（術後 1日4回）",
+    name: "サンベタゾン",
+    note: "術後 1日4回",
+    steps: [
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+    ],
+  },
+  {
+    templateId: "tpl_mydrin",
+    title: "ミドリンＰ（手術直前）",
+    name: "ミドリンＰ",
+    note: "手術直前",
+    steps: [
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+    ],
+  },
+];
+
 /** 一意な識別子を生成 */
 export function createId(prefix) {
   if (typeof crypto !== "undefined" && crypto.randomUUID) {
@@ -40,6 +88,7 @@ export function createDefaultMedication(isLast = false) {
   return {
     id: createId("med"),
     name: "",
+    note: "",
     steps,
   };
 }
@@ -108,6 +157,7 @@ export function normalizeRoutineSteps(medications) {
     }
     return {
       ...med,
+      note: typeof med.note === "string" ? med.note : "",
       steps,
     };
   });
@@ -189,4 +239,67 @@ export function formatDateTime(iso) {
 /** 未保存の完了履歴リストから指定IDを除外 */
 export function removePendingResult(pendingResults, executionId) {
   return (pendingResults || []).filter((r) => r.executionId !== executionId);
+}
+
+/** テンプレートや既存の薬から新規追加用の点眼薬データを複製生成 */
+export function cloneMedicationForAdd(source) {
+  const srcSteps = Array.isArray(source?.steps) ? source.steps : [];
+  const prepare = srcSteps.find((s) => s.type === STEP_TYPES.PREPARE) || {
+    type: STEP_TYPES.PREPARE,
+    label: "準備",
+    durationSec: 15,
+  };
+  const meditation = srcSteps.find((s) => s.type === STEP_TYPES.MEDITATION) || {
+    type: STEP_TYPES.MEDITATION,
+    label: "直後の瞑想",
+    durationSec: 60,
+  };
+  const wait = srcSteps.find((s) => s.type === STEP_TYPES.WAIT) || {
+    type: STEP_TYPES.WAIT,
+    label: "次の点眼までの待機",
+    durationSec: 300,
+  };
+  return {
+    id: createId("med"),
+    name: typeof source?.name === "string" ? source.name : "",
+    note: typeof source?.note === "string" ? source.note : "",
+    steps: [{ ...prepare }, { ...meditation }, { ...wait }],
+  };
+}
+
+/** 保存済みルーティン群から既存の点眼薬行程を重複整理して抽出 */
+export function extractExistingMedications(routines) {
+  if (!Array.isArray(routines)) return [];
+  const map = new Map();
+
+  routines.forEach((routine) => {
+    const routineName = (routine?.name || "").trim() || "名称未設定ルーティン";
+    const meds = Array.isArray(routine?.medications) ? routine.medications : [];
+    meds.forEach((med) => {
+      const name = (med?.name || "").trim();
+      if (!name) return;
+      const note = typeof med?.note === "string" ? med.note.trim() : "";
+      const normalized = cloneMedicationForAdd(med);
+      const stepSig = normalized.steps
+        .map((s) => `${s.type}:${s.label}:${Number(s.durationSec) || 0}`)
+        .join("|");
+      const key = `${name}||${note}||${stepSig}`;
+
+      if (map.has(key)) {
+        const entry = map.get(key);
+        if (!entry.sourceRoutineNames.includes(routineName)) {
+          entry.sourceRoutineNames.push(routineName);
+        }
+      } else {
+        map.set(key, {
+          ...normalized,
+          name,
+          note,
+          sourceRoutineNames: [routineName],
+        });
+      }
+    });
+  });
+
+  return Array.from(map.values());
 }

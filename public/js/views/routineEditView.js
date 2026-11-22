@@ -1,9 +1,12 @@
 // SCR-02: ルーティン作成・編集画面（時間設定ダイアログ含む）
 import {
   DURATION_TEMPLATES,
+  MEDICATION_TEMPLATES,
   STEP_TYPES,
+  cloneMedicationForAdd,
   createDefaultMedication,
   escapeHtml,
+  extractExistingMedications,
   formatDuration,
   normalizeRoutineSteps,
   parseDurationInput,
@@ -59,13 +62,21 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
                 <span class="drag-handle" title="ドラッグして並び替え" aria-label="薬の並び替えハンドル">☰</span>
                 <strong>薬 ${medIdx + 1}${isLast ? "（最後）" : ""}</strong>
               </div>
-              <button
-                type="button"
-                class="btn btn-danger btn-sm"
-                data-action="remove-med"
-                data-med-idx="${medIdx}"
-                ${draft.medications.length <= 1 ? "disabled" : ""}
-              >薬削除</button>
+              <div class="med-card-actions">
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  data-action="duplicate-med"
+                  data-med-idx="${medIdx}"
+                >複製</button>
+                <button
+                  type="button"
+                  class="btn btn-danger btn-sm"
+                  data-action="remove-med"
+                  data-med-idx="${medIdx}"
+                  ${draft.medications.length <= 1 ? "disabled" : ""}
+                >薬削除</button>
+              </div>
             </div>
             <div class="form-group">
               <label class="field-label">薬名（必須）</label>
@@ -75,6 +86,16 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
                 data-med-idx="${medIdx}"
                 value="${escapeHtml(med.name)}"
                 placeholder="例: ヒアルロン酸点眼液"
+              >
+            </div>
+            <div class="form-group">
+              <label class="field-label">備考（任意・読み上げ対象外）</label>
+              <input
+                type="text"
+                class="text-input med-note-input"
+                data-med-idx="${medIdx}"
+                value="${escapeHtml(med.note || "")}"
+                placeholder="例: 1回1滴、目頭を軽く押さえる"
               >
             </div>
             ${stepsHtml}
@@ -110,8 +131,9 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
         </div>
       </div>
       <div id="medications-list">${medsHtml}</div>
-      <div style="margin-top: 12px;">
+      <div class="edit-add-actions">
         <button type="button" class="btn btn-secondary" id="btn-add-med">＋ 点眼薬を追加</button>
+        <button type="button" class="btn btn-secondary" id="btn-add-from-template">📋 テンプレート／既存から追加</button>
       </div>
     `;
 
@@ -126,6 +148,13 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
       const idx = Number(input.dataset.medIdx);
       if (draft.medications[idx]) {
         draft.medications[idx].name = input.value;
+      }
+    });
+
+    container.querySelectorAll(".med-note-input").forEach((input) => {
+      const idx = Number(input.dataset.medIdx);
+      if (draft.medications[idx]) {
+        draft.medications[idx].note = input.value;
       }
     });
 
@@ -159,6 +188,31 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
       draft.medications.push(createDefaultMedication(true));
       draft.medications = normalizeRoutineSteps(draft.medications);
       renderForm();
+    });
+
+    container.querySelector("#btn-add-from-template")?.addEventListener("click", () => {
+      syncInputsFromDom();
+      const existingRoutines = Array.isArray(actions?.existingRoutines) ? actions.existingRoutines : [];
+      openMedicationPickerDialog(existingRoutines, (selectedItems) => {
+        if (!selectedItems.length) return;
+        const added = selectedItems.map((item) => cloneMedicationForAdd(item));
+        draft.medications.push(...added);
+        draft.medications = normalizeRoutineSteps(draft.medications);
+        renderForm();
+      });
+    });
+
+    container.querySelectorAll('[data-action="duplicate-med"]').forEach((btn) => {
+      btn.addEventListener("click", () => {
+        syncInputsFromDom();
+        const idx = Number(btn.dataset.medIdx);
+        const target = draft.medications[idx];
+        if (!target) return;
+        const cloned = cloneMedicationForAdd(target);
+        draft.medications.splice(idx + 1, 0, cloned);
+        draft.medications = normalizeRoutineSteps(draft.medications);
+        renderForm();
+      });
     });
 
     container.querySelectorAll('[data-action="remove-med"]').forEach((btn) => {
@@ -340,4 +394,164 @@ function openDurationDialog(step, onConfirm) {
 
   updatePreview();
   valueInput.focus();
+}
+
+/** テンプレート・既存行程選択ダイアログを開く */
+function openMedicationPickerDialog(existingRoutines, onConfirm) {
+  const existingItems = extractExistingMedications(existingRoutines);
+  let activeTab = "templates";
+  let searchQuery = "";
+  const selectedTemplates = new Set();
+  const selectedExisting = new Set();
+
+  const backdrop = document.createElement("div");
+  backdrop.className = "modal-backdrop";
+
+  const formatStepsSummary = (steps) =>
+    (steps || [])
+      .map((s) => `${getStepTypeTitle(s.type)} ${formatDuration(s.durationSec)}`)
+      .join(" / ");
+
+  const renderDialog = () => {
+    const totalSelected = selectedTemplates.size + selectedExisting.size;
+    const query = searchQuery.trim().toLowerCase();
+
+    let listHtml = "";
+    if (activeTab === "templates") {
+      listHtml = MEDICATION_TEMPLATES.map((tpl) => {
+        const isSelected = selectedTemplates.has(tpl.templateId);
+        return `
+          <label class="picker-item ${isSelected ? "is-selected" : ""}">
+            <input type="checkbox" class="picker-checkbox" data-kind="template" data-key="${escapeHtml(tpl.templateId)}" ${isSelected ? "checked" : ""}>
+            <div class="picker-item-body">
+              <div class="picker-item-title">${escapeHtml(tpl.title)}</div>
+              <div class="picker-item-sub">薬名: ${escapeHtml(tpl.name)}${tpl.note ? ` ／ 備考: ${escapeHtml(tpl.note)}` : ""}</div>
+              <div class="picker-item-steps">${escapeHtml(formatStepsSummary(tpl.steps))}</div>
+            </div>
+          </label>
+        `;
+      }).join("");
+    } else {
+      const filtered = existingItems
+        .map((item, idx) => ({ item, idx }))
+        .filter(({ item }) => {
+          if (!query) return true;
+          const haystack = [item.name, item.note, ...(item.sourceRoutineNames || [])]
+            .join(" ")
+            .toLowerCase();
+          return haystack.includes(query);
+        });
+
+      if (existingItems.length === 0) {
+        listHtml = `<div class="picker-empty">登録済みの点眼薬がまだありません。</div>`;
+      } else if (filtered.length === 0) {
+        listHtml = `<div class="picker-empty">条件に一致する点眼薬が見つかりません。</div>`;
+      } else {
+        listHtml = filtered
+          .map(({ item, idx }) => {
+            const isSelected = selectedExisting.has(idx);
+            const sourcesHtml = (item.sourceRoutineNames || [])
+              .map((rn) => `<span class="picker-source-badge">${escapeHtml(rn)}</span>`)
+              .join("");
+            return `
+              <label class="picker-item ${isSelected ? "is-selected" : ""}">
+                <input type="checkbox" class="picker-checkbox" data-kind="existing" data-key="${idx}" ${isSelected ? "checked" : ""}>
+                <div class="picker-item-body">
+                  <div class="picker-item-title">${escapeHtml(item.name)}</div>
+                  ${item.note ? `<div class="picker-item-sub">備考: ${escapeHtml(item.note)}</div>` : ""}
+                  <div class="picker-item-steps">${escapeHtml(formatStepsSummary(item.steps))}</div>
+                  <div class="picker-item-sources">${sourcesHtml}</div>
+                </div>
+              </label>
+            `;
+          })
+          .join("");
+      }
+    }
+
+    backdrop.innerHTML = `
+      <div class="modal-dialog modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title">
+        <h2 id="picker-modal-title">テンプレート／既存から行程を追加</h2>
+        <div class="modal-tabs" role="tablist">
+          <button type="button" role="tab" aria-selected="${activeTab === "templates"}" class="modal-tab ${activeTab === "templates" ? "is-active" : ""}" data-tab="templates">定義済みテンプレート</button>
+          <button type="button" role="tab" aria-selected="${activeTab === "existing"}" class="modal-tab ${activeTab === "existing" ? "is-active" : ""}" data-tab="existing">登録済みの薬 (${existingItems.length})</button>
+        </div>
+        ${
+          activeTab === "existing"
+            ? `<div class="picker-search-wrap">
+                <input type="text" id="picker-search-input" class="text-input" value="${escapeHtml(searchQuery)}" placeholder="薬名・備考・ルーティン名で絞り込み">
+              </div>`
+            : ""
+        }
+        <div class="picker-list">${listHtml}</div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" id="btn-picker-cancel">キャンセル</button>
+          <button type="button" class="btn btn-primary" id="btn-picker-ok" ${totalSelected === 0 ? "disabled" : ""}>追加する (${totalSelected}件)</button>
+        </div>
+      </div>
+    `;
+
+    bindDialogEvents();
+  };
+
+  const close = () => backdrop.remove();
+
+  const bindDialogEvents = () => {
+    backdrop.querySelectorAll("[data-tab]").forEach((tabBtn) => {
+      tabBtn.addEventListener("click", () => {
+        activeTab = tabBtn.dataset.tab;
+        renderDialog();
+      });
+    });
+
+    const searchInput = backdrop.querySelector("#picker-search-input");
+    if (searchInput) {
+      searchInput.addEventListener("input", () => {
+        searchQuery = searchInput.value;
+        const caret = searchInput.selectionStart ?? searchQuery.length;
+        renderDialog();
+        const nextInput = backdrop.querySelector("#picker-search-input");
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.setSelectionRange(caret, caret);
+        }
+      });
+    }
+
+    backdrop.querySelectorAll(".picker-checkbox").forEach((checkbox) => {
+      checkbox.addEventListener("change", () => {
+        const kind = checkbox.dataset.kind;
+        const key = checkbox.dataset.key;
+        if (kind === "template") {
+          if (checkbox.checked) selectedTemplates.add(key);
+          else selectedTemplates.delete(key);
+        } else {
+          const idx = Number(key);
+          if (checkbox.checked) selectedExisting.add(idx);
+          else selectedExisting.delete(idx);
+        }
+        renderDialog();
+      });
+    });
+
+    backdrop.querySelector("#btn-picker-cancel")?.addEventListener("click", close);
+    backdrop.querySelector("#btn-picker-ok")?.addEventListener("click", () => {
+      const picked = [
+        ...MEDICATION_TEMPLATES.filter((t) => selectedTemplates.has(t.templateId)),
+        ...Array.from(selectedExisting)
+          .sort((a, b) => a - b)
+          .map((idx) => existingItems[idx])
+          .filter(Boolean),
+      ];
+      close();
+      onConfirm(picked);
+    });
+  };
+
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) close();
+  });
+
+  document.body.appendChild(backdrop);
+  renderDialog();
 }

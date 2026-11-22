@@ -50,7 +50,10 @@ export function renderConfirmView(container, routine, voiceSettings, speech, act
                 .filter((s) => Number(s.durationSec) > 0)
                 .map((s) => `${escapeHtml(s.label)}（${escapeHtml(formatDuration(s.durationSec))}）`)
                 .join(" → ");
-              return `<li><strong>${escapeHtml(m.name)}</strong>: ${stepsText || "実行工程なし"}</li>`;
+              const noteHtml = m.note
+                ? `<div class="muted-text med-note-text">備考: ${escapeHtml(m.note)}</div>`
+                : "";
+              return `<li><strong>${escapeHtml(m.name)}</strong>: ${stepsText || "実行工程なし"}${noteHtml}</li>`;
             })
             .join("")}
         </ol>

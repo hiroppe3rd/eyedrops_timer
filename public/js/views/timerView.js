@@ -37,6 +37,7 @@ export function renderTimerView(container, routine, actions) {
 
     <section class="card timer-card" id="timer-card">
       <div class="timer-med-name" id="timer-med-name"></div>
+      <div class="timer-med-note muted-text" id="timer-med-note" hidden></div>
       <div class="timer-step-label" id="timer-step-label"></div>
       <div class="timer-guide-banner" id="timer-guide-banner" hidden></div>
       <div class="timer-clock" id="timer-clock">00:00</div>
@@ -65,6 +66,7 @@ export function renderTimerView(container, routine, actions) {
   const medProgressEl = container.querySelector("#timer-med-progress");
   const wakeLockBadgeEl = container.querySelector("#timer-wakelock-badge");
   const medNameEl = container.querySelector("#timer-med-name");
+  const medNoteEl = container.querySelector("#timer-med-note");
   const stepLabelEl = container.querySelector("#timer-step-label");
   const guideBannerEl = container.querySelector("#timer-guide-banner");
   const clockEl = container.querySelector("#timer-clock");
@@ -124,6 +126,11 @@ export function renderTimerView(container, routine, actions) {
       flashCard();
       if (medProgressEl) medProgressEl.textContent = `薬 ${step.medIndex + 1} / ${step.totalMeds}`;
       if (medNameEl) medNameEl.textContent = step.medName;
+      if (medNoteEl) {
+        const noteText = (step.medNote || "").trim();
+        medNoteEl.textContent = noteText ? `備考: ${noteText}` : "";
+        medNoteEl.hidden = !noteText;
+      }
       if (stepLabelEl) stepLabelEl.textContent = step.label;
       if (stepCounterEl) stepCounterEl.textContent = `全体進捗: ${index + 1} / ${totalSteps} 工程`;
       actions.onStepStart?.(step, prev);

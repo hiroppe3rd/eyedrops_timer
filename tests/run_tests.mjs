@@ -6,9 +6,12 @@ import path from "node:path";
 
 import {
   DURATION_TEMPLATES,
+  MEDICATION_TEMPLATES,
   STEP_TYPES,
   calcRoutineTotalSeconds,
+  cloneMedicationForAdd,
   createDefaultRoutine,
+  extractExistingMedications,
   formatDateTime,
   formatDuration,
   normalizeRoutineSteps,
@@ -343,6 +346,63 @@ await test("Googleカレンダー連携: 認証拒否・通信失敗・再試行
   } finally {
     CONFIG.GOOGLE_CLIENT_ID = origClientId;
   }
+});
+
+// 7. 行程の複製・テンプレート・既存抽出・備考（非読み上げ）の検証
+await test("行程テンプレート・既存抽出・複製・備考の保持と非読み上げ", () => {
+  assert.ok(MEDICATION_TEMPLATES.length >= 4);
+  const tpl = MEDICATION_TEMPLATES[0];
+  const cloned = cloneMedicationForAdd(tpl);
+  assert.ok(cloned.id.startsWith("med_"));
+  assert.equal(cloned.name, tpl.name);
+  assert.equal(cloned.steps.length, 3);
+
+  // 既存ルーティンからの抽出・重複統合
+  const routines = [
+    {
+      id: "rt_1",
+      name: "朝",
+      medications: [
+        {
+          id: "m1",
+          name: "ヒアルロン酸",
+          note: "1回1滴",
+          steps: [
+            { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+            { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 60 },
+            { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 300 },
+          ],
+        },
+        { id: "m2", name: "", note: "空名は除外", steps: [] },
+      ],
+    },
+    {
+      id: "rt_2",
+      name: "夜",
+      medications: [
+        {
+          id: "m3",
+          name: "ヒアルロン酸",
+          note: "1回1滴",
+          steps: [
+            { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+            { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 60 },
+            { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 300 },
+          ],
+        },
+      ],
+    },
+  ];
+  const extracted = extractExistingMedications(routines);
+  assert.equal(extracted.length, 1);
+  assert.deepEqual(extracted[0].sourceRoutineNames, ["朝", "夜"]);
+  assert.equal(extracted[0].note, "1回1滴");
+
+  // 備考がキューに含まれても読み上げ文には含まれないこと
+  const queue = buildExecutionQueue(routines[0]);
+  assert.equal(queue[0].medNote, "1回1滴");
+  const speechText = buildStepStartSpeech(queue[0]);
+  assert.ok(!speechText.includes("1回1滴"));
 });
 
 console.log(`\n全 ${passed} 件の検証テストが合格しました。`);

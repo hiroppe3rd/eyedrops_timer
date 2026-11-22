@@ -20,6 +20,7 @@ export function buildExecutionQueue(routine) {
         medIndex: medIdx,
         totalMeds,
         medName: med.name,
+        medNote: typeof med.note === "string" ? med.note : "",
         isFirstStepOfMed,
         type: step.type,
         label: step.label,
