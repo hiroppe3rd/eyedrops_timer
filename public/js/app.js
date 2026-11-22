@@ -13,6 +13,7 @@ import { renderWorkoutListView } from "./views/workoutListView.js";
 import { renderWorkoutEditView } from "./views/workoutEditView.js";
 import { renderConfirmView } from "./views/confirmView.js";
 import { renderTimerView } from "./views/timerView.js";
+import { renderCompleteView } from "./views/completeView.js";
 
 const appContainer = document.getElementById("app");
 const initialData = loadAppData();
@@ -75,9 +76,10 @@ function render() {
         appState.currentScreen = "SCR-03";
         render();
       },
-      onRetryPending: () => {
-        // フェーズ5でSCR-05を実装予定
-        window.alert("カレンダー保存画面（SCR-05）はフェーズ5で実装予定です。");
+      onRetryPending: (pendingResult) => {
+        appState.latestResult = pendingResult;
+        appState.currentScreen = "SCR-05";
+        render();
       },
     });
     return;
@@ -212,27 +214,26 @@ function render() {
 
   if (appState.currentScreen === "SCR-05") {
     const result = appState.latestResult || appState.data.pendingResults[0];
-    appContainer.innerHTML = `
-      <div class="view-header">
-        <span></span>
-        <h1>ワークアウト完了</h1>
-        <button type="button" class="btn btn-secondary" id="btn-done-home">一覧へ</button>
-      </div>
-      <section class="card">
-        <p style="color:var(--accent); font-weight:700; margin-top:0;">✓ すべての工程が完了しました</p>
-        ${
-          result
-            ? `<p>ワークアウト: <strong>${escapeHtml(result.workoutName)}</strong></p>
-               <p class="muted-text">開始: ${escapeHtml(new Date(result.startedAt).toLocaleString("ja-JP"))}<br>
-               完了: ${escapeHtml(new Date(result.completedAt).toLocaleString("ja-JP"))}</p>`
-            : ""
+    renderCompleteView(appContainer, result, {
+      onSaved: (executionId, htmlLink) => {
+        if (appState.latestResult && appState.latestResult.executionId === executionId) {
+          appState.latestResult = {
+            ...appState.latestResult,
+            calendarStatus: "saved",
+            htmlLink,
+          };
         }
-        <p class="muted-text">※ Googleカレンダーへの保存機能はフェーズ5で実装予定です（完了履歴はブラウザーに一時保存済みです）。</p>
-      </section>
-    `;
-    appContainer.querySelector("#btn-done-home")?.addEventListener("click", () => {
-      appState.currentScreen = "SCR-01";
-      render();
+        // 保存完了した履歴は未保存リストから除去
+        appState.data.pendingResults = (appState.data.pendingResults || []).filter(
+          (r) => r.executionId !== executionId
+        );
+        saveAppData(appState.data);
+      },
+      onBackHome: () => {
+        appState.latestResult = null;
+        appState.currentScreen = "SCR-01";
+        render();
+      },
     });
   }
 }
