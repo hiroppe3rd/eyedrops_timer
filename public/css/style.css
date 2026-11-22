@@ -316,6 +316,115 @@ body {
   border-bottom: 1px solid var(--bg);
 }
 
+/* 行程カードの追加・複製・移動・削除アニメーション */
+.med-card {
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+@keyframes med-card-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.25);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.18);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+}
+
+@keyframes med-card-duplicate {
+  0% {
+    opacity: 0;
+    transform: translateY(-16px) scale(0.97);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.28);
+  }
+  65% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(13, 148, 136, 0.18);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+}
+
+@keyframes med-card-moved {
+  0% {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.3);
+  }
+  100% {
+    border-color: var(--border);
+    box-shadow: var(--shadow);
+  }
+}
+
+@keyframes med-card-remove {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+  45% {
+    opacity: 0;
+    transform: translateX(24px) scale(0.97);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(24px) scale(0.97);
+    max-height: 0;
+    margin-bottom: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+    border-width: 0;
+  }
+}
+
+.med-card-enter {
+  animation: med-card-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.med-card-duplicate {
+  animation: med-card-duplicate 0.48s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.med-card-moved {
+  animation: med-card-moved 0.55s ease-out;
+}
+
+.med-card-removing {
+  overflow: hidden;
+  pointer-events: none;
+  border-color: var(--danger-border);
+  animation: med-card-remove 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .med-card {
+    transition-duration: 0.01ms !important;
+  }
+  .med-card-enter,
+  .med-card-duplicate,
+  .med-card-moved,
+  .med-card-removing {
+    animation-duration: 0.01ms !important;
+  }
+}
+
 .step-field {
   margin-bottom: 10px;
 }

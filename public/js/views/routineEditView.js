@@ -5,6 +5,7 @@ import {
   STEP_TYPES,
   cloneMedicationForAdd,
   createDefaultMedication,
+  createId,
   escapeHtml,
   extractExistingMedications,
   formatDuration,
@@ -18,9 +19,14 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
   // 末尾の待機工程ルールを反映して作業コピーを作成
   let draft = {
     ...draftRoutine,
-    medications: normalizeRoutineSteps(draftRoutine.medications),
+    medications: normalizeRoutineSteps(draftRoutine.medications).map((med) => ({
+      ...med,
+      id: med.id || createId("med"),
+    })),
   };
   let validationErrors = [];
+  let pendingEffect = null;
+  let isRemoving = false;
 
   const renderForm = () => {
     const medsHtml = draft.medications
@@ -56,7 +62,7 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
           .join("");
 
         return `
-          <div class="card med-card" draggable="true" data-med-idx="${medIdx}">
+          <div class="card med-card" draggable="true" data-med-idx="${medIdx}" data-med-id="${escapeHtml(med.id)}">
             <div class="med-card-head">
               <div class="med-title-wrap">
                 <span class="drag-handle" title="ドラッグして並び替え" aria-label="薬の並び替えハンドル">☰</span>
@@ -138,6 +144,74 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
     `;
 
     bindEvents();
+    applyPendingEffect();
+  };
+
+  /** 画面再描画後の行程カードアニメーション適用 */
+  const applyPendingEffect = () => {
+    if (!pendingEffect) return;
+    const effect = pendingEffect;
+    pendingEffect = null;
+
+    const listEl = container.querySelector("#medications-list");
+    if (!listEl) return;
+
+    if (effect.type === "enter" || effect.type === "duplicate") {
+      const cls = effect.type === "duplicate" ? "med-card-duplicate" : "med-card-enter";
+      const targets = (effect.ids || [])
+        .map((id) => listEl.querySelector(`.med-card[data-med-id="${CSS.escape(id)}"]`))
+        .filter(Boolean);
+
+      targets.forEach((card) => {
+        card.classList.add(cls);
+        card.addEventListener("animationend", () => card.classList.remove(cls), { once: true });
+      });
+
+      if (targets[0] && typeof targets[0].scrollIntoView === "function") {
+        targets[0].scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+      return;
+    }
+
+    if (effect.type === "move" && effect.prevRects) {
+      const cards = Array.from(listEl.querySelectorAll(".med-card"));
+      const animatedCards = [];
+
+      // FLIP: 移動前後の位置差分から逆方向にずらして配置
+      cards.forEach((card) => {
+        const id = card.dataset.medId;
+        const prevTop = effect.prevRects.get(id);
+        if (prevTop === undefined) return;
+        const deltaY = prevTop - card.getBoundingClientRect().top;
+        if (Math.abs(deltaY) < 0.5) return;
+        card.style.transition = "none";
+        card.style.transform = `translateY(${deltaY}px)`;
+        animatedCards.push(card);
+      });
+
+      if (animatedCards.length > 0) {
+        // 強制リフロー後にトランジションを有効化して元の位置へ戻す
+        void listEl.offsetHeight;
+        requestAnimationFrame(() => {
+          animatedCards.forEach((card) => {
+            card.style.transition = "";
+            card.style.transform = "";
+          });
+        });
+      }
+
+      if (effect.movedId) {
+        const movedCard = listEl.querySelector(`.med-card[data-med-id="${CSS.escape(effect.movedId)}"]`);
+        if (movedCard) {
+          movedCard.classList.add("med-card-moved");
+          movedCard.addEventListener(
+            "animationend",
+            () => movedCard.classList.remove("med-card-moved"),
+            { once: true }
+          );
+        }
+      }
+    }
   };
 
   const syncInputsFromDom = () => {
@@ -172,6 +246,7 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
     });
 
     container.querySelector("#btn-save-routine")?.addEventListener("click", () => {
+      if (isRemoving) return;
       syncInputsFromDom();
       draft.medications = normalizeRoutineSteps(draft.medications);
       validationErrors = validateRoutine(draft);
@@ -184,13 +259,17 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
     });
 
     container.querySelector("#btn-add-med")?.addEventListener("click", () => {
+      if (isRemoving) return;
       syncInputsFromDom();
-      draft.medications.push(createDefaultMedication(true));
+      const newMed = createDefaultMedication(true);
+      draft.medications.push(newMed);
       draft.medications = normalizeRoutineSteps(draft.medications);
+      pendingEffect = { type: "enter", ids: [newMed.id] };
       renderForm();
     });
 
     container.querySelector("#btn-add-from-template")?.addEventListener("click", () => {
+      if (isRemoving) return;
       syncInputsFromDom();
       const existingRoutines = Array.isArray(actions?.existingRoutines) ? actions.existingRoutines : [];
       openMedicationPickerDialog(existingRoutines, (selectedItems) => {
@@ -198,12 +277,14 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
         const added = selectedItems.map((item) => cloneMedicationForAdd(item));
         draft.medications.push(...added);
         draft.medications = normalizeRoutineSteps(draft.medications);
+        pendingEffect = { type: "enter", ids: added.map((m) => m.id) };
         renderForm();
       });
     });
 
     container.querySelectorAll('[data-action="duplicate-med"]').forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (isRemoving) return;
         syncInputsFromDom();
         const idx = Number(btn.dataset.medIdx);
         const target = draft.medications[idx];
@@ -211,23 +292,55 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
         const cloned = cloneMedicationForAdd(target);
         draft.medications.splice(idx + 1, 0, cloned);
         draft.medications = normalizeRoutineSteps(draft.medications);
+        pendingEffect = { type: "duplicate", ids: [cloned.id] };
         renderForm();
       });
     });
 
     container.querySelectorAll('[data-action="remove-med"]').forEach((btn) => {
       btn.addEventListener("click", () => {
-        syncInputsFromDom();
+        if (isRemoving || draft.medications.length <= 1) return;
         const idx = Number(btn.dataset.medIdx);
-        if (draft.medications.length <= 1) return;
-        draft.medications.splice(idx, 1);
-        draft.medications = normalizeRoutineSteps(draft.medications);
-        renderForm();
+        const targetMed = draft.medications[idx];
+        if (!targetMed) return;
+
+        const card = btn.closest(".med-card");
+        const performRemove = () => {
+          syncInputsFromDom();
+          const removeIdx = draft.medications.findIndex((m) => m.id === targetMed.id);
+          if (removeIdx !== -1 && draft.medications.length > 1) {
+            draft.medications.splice(removeIdx, 1);
+          }
+          draft.medications = normalizeRoutineSteps(draft.medications);
+          isRemoving = false;
+          renderForm();
+        };
+
+        if (!card) {
+          performRemove();
+          return;
+        }
+
+        // 削除アニメーション完了後に配列から除外して再描画
+        isRemoving = true;
+        let done = false;
+        const finishRemove = () => {
+          if (done) return;
+          done = true;
+          performRemove();
+        };
+
+        card.style.maxHeight = `${card.offsetHeight}px`;
+        void card.offsetHeight;
+        card.classList.add("med-card-removing");
+        card.addEventListener("animationend", finishRemove, { once: true });
+        setTimeout(finishRemove, 350);
       });
     });
 
     container.querySelectorAll('[data-action="open-duration"]').forEach((btn) => {
       btn.addEventListener("click", () => {
+        if (isRemoving) return;
         syncInputsFromDom();
         const medIdx = Number(btn.dataset.medIdx);
         const stepType = btn.dataset.stepType;
@@ -242,15 +355,30 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
     });
 
     setupMedicationDragAndDrop(container.querySelector("#medications-list"), (fromIdx, toIdx) => {
+      if (isRemoving) return;
+      const listEl = container.querySelector("#medications-list");
+      const prevRects = captureCardRects(listEl);
       syncInputsFromDom();
       const [moved] = draft.medications.splice(fromIdx, 1);
       draft.medications.splice(toIdx, 0, moved);
       draft.medications = normalizeRoutineSteps(draft.medications);
+      pendingEffect = { type: "move", movedId: moved?.id, prevRects };
       renderForm();
     });
   };
 
   renderForm();
+}
+
+/** 移動前後の位置比較用に各カードのY座標を収集 */
+function captureCardRects(listEl) {
+  const rects = new Map();
+  if (!listEl) return rects;
+  listEl.querySelectorAll(".med-card").forEach((card) => {
+    const id = card.dataset.medId;
+    if (id) rects.set(id, card.getBoundingClientRect().top);
+  });
+  return rects;
 }
 
 /** 工程種別の表示ラベル */
