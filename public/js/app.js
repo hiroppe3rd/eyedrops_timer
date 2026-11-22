@@ -1,26 +1,40 @@
 // 点眼タイマー SPA エントリーポイント
 import {
-  calcWorkoutTotalSeconds,
   createDefaultWorkout,
   escapeHtml,
-  formatDuration,
 } from "./models.js";
 import { loadAppData, saveAppData } from "./storage.js";
+import {
+  SpeechGuideController,
+  buildStepCompleteSpeech,
+  buildStepStartSpeech,
+} from "./speech.js";
 import { renderWorkoutListView } from "./views/workoutListView.js";
 import { renderWorkoutEditView } from "./views/workoutEditView.js";
+import { renderConfirmView } from "./views/confirmView.js";
+import { renderTimerView } from "./views/timerView.js";
 
 const appContainer = document.getElementById("app");
+const initialData = loadAppData();
+const speech = new SpeechGuideController(initialData.voiceSettings);
+
 const appState = {
-  data: loadAppData(),
+  data: initialData,
   currentScreen: "SCR-01",
   editingWorkout: null,
   editingIsNew: false,
   selectedWorkoutId: null,
+  latestResult: null,
+  cleanupCurrentView: null,
 };
 
 /** 画面描画 */
 function render() {
   if (!appContainer) return;
+  if (typeof appState.cleanupCurrentView === "function") {
+    appState.cleanupCurrentView();
+    appState.cleanupCurrentView = null;
+  }
 
   if (appState.currentScreen === "SCR-01") {
     renderWorkoutListView(appContainer, appState, {
@@ -107,31 +121,116 @@ function render() {
       render();
       return;
     }
-    const totalSec = calcWorkoutTotalSeconds(workout);
+    appState.cleanupCurrentView = renderConfirmView(
+      appContainer,
+      workout,
+      appState.data.voiceSettings,
+      speech,
+      {
+        onBack: () => {
+          appState.currentScreen = "SCR-01";
+          render();
+        },
+        onUpdateVoiceSettings: (patch) => {
+          appState.data.voiceSettings = {
+            ...appState.data.voiceSettings,
+            ...patch,
+          };
+          speech.updateSettings(appState.data.voiceSettings);
+          saveAppData(appState.data);
+        },
+        onStart: () => {
+          appState.currentScreen = "SCR-04";
+          render();
+        },
+      }
+    );
+    return;
+  }
+
+  if (appState.currentScreen === "SCR-04") {
+    const workout = appState.data.workouts.find((w) => w.id === appState.selectedWorkoutId);
+    if (!workout) {
+      appState.currentScreen = "SCR-01";
+      render();
+      return;
+    }
+    const timerCleanup = renderTimerView(appContainer, workout, {
+      bindSubtitle: (fn) => {
+        speech.onSubtitle = fn;
+      },
+      onStepStart: (step, prevStep) => {
+        // 5秒未満の短い工程は開始読み上げを省きカウントダウンを優先
+        if (step.durationSec < 5) {
+          speech.onSubtitle?.(`${step.medName} ${step.label}（${step.durationSec}秒）`);
+          return;
+        }
+        speech.speak(buildStepStartSpeech(step, prevStep), {
+          interrupt: false,
+          fallbackTone: "start",
+        });
+      },
+      onCountdown: (sec) => {
+        // 前の発話が再生中の場合はキャンセルで割り込む
+        speech.speak(String(sec), { interrupt: true, fallbackTone: "tick" });
+      },
+      onStepComplete: (step, skippedByBackground) => {
+        if (skippedByBackground) return;
+        speech.speak(buildStepCompleteSpeech(step), {
+          interrupt: false,
+          fallbackTone: "complete",
+        });
+      },
+      onPause: () => {
+        speech.cancel();
+      },
+      onSkip: () => {
+        speech.cancel();
+      },
+      onAbort: () => {
+        speech.cancel();
+        speech.onSubtitle = null;
+        appState.currentScreen = "SCR-01";
+        render();
+      },
+      onComplete: (result) => {
+        speech.onSubtitle = null;
+        // 完了履歴を未保存状態で一時保存
+        appState.data.pendingResults.unshift(result);
+        saveAppData(appState.data);
+        appState.latestResult = result;
+        appState.currentScreen = "SCR-05";
+        render();
+      },
+    });
+    appState.cleanupCurrentView = () => {
+      speech.onSubtitle = null;
+      timerCleanup();
+    };
+    return;
+  }
+
+  if (appState.currentScreen === "SCR-05") {
+    const result = appState.latestResult || appState.data.pendingResults[0];
     appContainer.innerHTML = `
       <div class="view-header">
-        <button type="button" class="btn btn-secondary" id="btn-back-list">← 一覧へ</button>
-        <h1>開始前確認</h1>
         <span></span>
+        <h1>ワークアウト完了</h1>
+        <button type="button" class="btn btn-secondary" id="btn-done-home">一覧へ</button>
       </div>
       <section class="card">
-        <h2 style="margin-top:0;">${escapeHtml(workout.name)}</h2>
-        <p>合計予定時間: <strong>${escapeHtml(formatDuration(totalSec))}</strong></p>
-        <ul>
-          ${workout.medications
-            .map(
-              (m) => `
-              <li>
-                <strong>${escapeHtml(m.name)}</strong>:
-                ${m.steps.map((s) => `${escapeHtml(s.label)}（${escapeHtml(formatDuration(s.durationSec))}）`).join(" → ")}
-              </li>`
-            )
-            .join("")}
-        </ul>
-        <p class="muted-text">※ タイマー実行（SCR-04）と音声設定はフェーズ3〜4で実装予定です。</p>
+        <p style="color:var(--accent); font-weight:700; margin-top:0;">✓ すべての工程が完了しました</p>
+        ${
+          result
+            ? `<p>ワークアウト: <strong>${escapeHtml(result.workoutName)}</strong></p>
+               <p class="muted-text">開始: ${escapeHtml(new Date(result.startedAt).toLocaleString("ja-JP"))}<br>
+               完了: ${escapeHtml(new Date(result.completedAt).toLocaleString("ja-JP"))}</p>`
+            : ""
+        }
+        <p class="muted-text">※ Googleカレンダーへの保存機能はフェーズ5で実装予定です（完了履歴はブラウザーに一時保存済みです）。</p>
       </section>
     `;
-    appContainer.querySelector("#btn-back-list")?.addEventListener("click", () => {
+    appContainer.querySelector("#btn-done-home")?.addEventListener("click", () => {
       appState.currentScreen = "SCR-01";
       render();
     });

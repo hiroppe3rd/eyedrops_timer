@@ -409,3 +409,111 @@ body {
   font-size: 1.08rem;
   margin-top: 22px;
 }
+
+/* タイマー実行画面 (SCR-04) */
+.timer-card {
+  text-align: center;
+  padding: 28px 20px;
+}
+
+.timer-med-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.timer-step-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-top: 4px;
+}
+
+.timer-guide-banner {
+  margin: 12px auto 0;
+  padding: 8px 14px;
+  border-radius: 8px;
+  background: #e0f2fe;
+  color: #0369a1;
+  font-weight: 700;
+  font-size: 0.92rem;
+  max-width: 420px;
+}
+
+.timer-clock {
+  font-size: 3.4rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  margin: 14px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-track {
+  width: 100%;
+  height: 14px;
+  background: #e2e8f0;
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), var(--accent));
+  transition: width 0.18s linear;
+}
+
+.timer-controls {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.pause-panel {
+  text-align: center;
+}
+
+.pause-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+/* 音声設定・視覚フィードバック */
+.confirm-med-list {
+  padding-left: 20px;
+  margin: 8px 0 0;
+}
+
+.confirm-med-list li {
+  margin-bottom: 6px;
+}
+
+.rate-btn-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.speech-subtitle {
+  margin-top: 12px;
+  min-height: 1.4em;
+  font-size: 0.88rem;
+  color: var(--primary);
+  font-weight: 600;
+}
+
+@keyframes timer-flash {
+  0% {
+    box-shadow: 0 0 0 4px rgba(2, 132, 199, 0.35);
+  }
+  100% {
+    box-shadow: var(--shadow);
+  }
+}
+
+.timer-card.is-flash {
+  animation: timer-flash 0.45s ease-out;
+}
