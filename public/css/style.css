@@ -541,3 +541,75 @@ body {
   background: #ccfbf1;
   color: var(--accent);
 }
+
+/* 未保存完了履歴インライン一覧 (SCR-01) */
+.pending-banner {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+}
+
+.pending-banner-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.pending-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pending-batch-error {
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  font-size: 0.86rem;
+}
+
+.pending-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.pending-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--surface);
+  border: 1px solid var(--warn-border);
+  border-radius: 8px;
+}
+
+.pending-item-info {
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.pending-item-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+
+.pending-item-time {
+  font-size: 0.82rem;
+}
+
+.pending-item-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}

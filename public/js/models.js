@@ -173,3 +173,20 @@ export function escapeHtml(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+/** ISO日時文字列を表示用テキストへ変換 */
+export function formatDateTime(iso) {
+  if (!iso) return "";
+  try {
+    const date = new Date(iso);
+    if (Number.isNaN(date.getTime())) return String(iso);
+    return date.toLocaleString("ja-JP");
+  } catch {
+    return String(iso);
+  }
+}
+
+/** 未保存の完了履歴リストから指定IDを除外 */
+export function removePendingResult(pendingResults, executionId) {
+  return (pendingResults || []).filter((r) => r.executionId !== executionId);
+}

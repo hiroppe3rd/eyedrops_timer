@@ -1,6 +1,6 @@
 // SCR-05: 完了・Googleカレンダー保存画面
 import { saveWorkoutToGoogleCalendar } from "../calendar.js";
-import { escapeHtml } from "../models.js";
+import { escapeHtml, formatDateTime } from "../models.js";
 
 /** 完了画面の描画と保存制御 */
 export function renderCompleteView(container, result, actions) {
@@ -22,14 +22,6 @@ export function renderCompleteView(container, result, actions) {
   let currentStatus = result.calendarStatus || "unsaved";
   let errorMessage = "";
   let createdEventUrl = result.htmlLink || "";
-
-  const formatDateTime = (iso) => {
-    try {
-      return new Date(iso).toLocaleString("ja-JP");
-    } catch {
-      return iso;
-    }
-  };
 
   const renderContent = () => {
     const isSaved = currentStatus === "saved";

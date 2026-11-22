@@ -119,3 +119,28 @@ export async function saveWorkoutToGoogleCalendar(result) {
   const accessToken = await requestGoogleAccessToken();
   return insertCalendarEvent(accessToken, result);
 }
+
+/** 未保存の完了履歴を一括登録（部分成功対応） */
+export async function savePendingResultsToGoogleCalendar(results, hooks = {}) {
+  const list = Array.isArray(results) ? results : [];
+  if (list.length === 0) {
+    return { succeededIds: [], failedError: null };
+  }
+
+  const accessToken = await requestGoogleAccessToken();
+  const succeededIds = [];
+
+  for (let i = 0; i < list.length; i += 1) {
+    const item = list[i];
+    hooks.onProgress?.(i + 1, list.length, item);
+    try {
+      const created = await insertCalendarEvent(accessToken, item);
+      succeededIds.push(item.executionId);
+      hooks.onItemSaved?.(item, created);
+    } catch (err) {
+      return { succeededIds, failedError: err };
+    }
+  }
+
+  return { succeededIds, failedError: null };
+}

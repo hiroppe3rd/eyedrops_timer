@@ -9,9 +9,11 @@ import {
   STEP_TYPES,
   calcWorkoutTotalSeconds,
   createDefaultWorkout,
+  formatDateTime,
   formatDuration,
   normalizeWorkoutSteps,
   parseDurationInput,
+  removePendingResult,
   validateWorkout,
 } from "../public/js/models.js";
 import { SCHEMA_VERSION, loadAppData, saveAppData } from "../public/js/storage.js";
@@ -24,6 +26,7 @@ import {
 import {
   buildCalendarEventPayload,
   isClientIdConfigured,
+  savePendingResultsToGoogleCalendar,
   saveWorkoutToGoogleCalendar,
 } from "../public/js/calendar.js";
 import { CONFIG } from "../public/js/config.js";
@@ -82,6 +85,17 @@ await test("時間テンプレート11種・手入力換算・バリデーショ
   assert.equal(wo.medications[1].steps.length, 2);
   assert.equal(validateWorkout(wo).length, 0);
   assert.equal(calcWorkoutTotalSeconds(wo), 15 + 60 + 300 + 10 + 60);
+
+  // 未保存履歴の削除・日時整形ヘルパー検証
+  const pending = [
+    { executionId: "ex_1", workoutName: "朝" },
+    { executionId: "ex_2", workoutName: "夜" },
+  ];
+  const afterRemove = removePendingResult(pending, "ex_1");
+  assert.equal(afterRemove.length, 1);
+  assert.equal(afterRemove[0].executionId, "ex_2");
+  assert.equal(formatDateTime(""), "");
+  assert.ok(formatDateTime("2026-11-22T08:00:00.000Z").length > 0);
 });
 
 // 3. storage.js の永続化・復元検証
@@ -279,6 +293,38 @@ await test("Googleカレンダー連携: 認証拒否・通信失敗・再試行
     };
     const created = await saveWorkoutToGoogleCalendar(sampleResult);
     assert.equal(created.id, "evt_1");
+
+    // まとめて再試行: 1回認証で部分成功・全件成功を検証
+    let authCalls = 0;
+    globalThis.window.google.accounts.oauth2.initTokenClient = ({ callback }) => ({
+      requestAccessToken: () => {
+        authCalls += 1;
+        callback({ access_token: "batch-token" });
+      },
+    });
+    let fetchCount = 0;
+    globalThis.fetch = async () => {
+      fetchCount += 1;
+      if (fetchCount === 2) {
+        throw new Error("Network down");
+      }
+      return {
+        ok: true,
+        json: async () => ({ id: `evt_${fetchCount}` }),
+      };
+    };
+    const batchItems = [
+      { ...sampleResult, executionId: "ex_a" },
+      { ...sampleResult, executionId: "ex_b" },
+    ];
+    const savedIds = [];
+    const partial = await savePendingResultsToGoogleCalendar(batchItems, {
+      onItemSaved: (item) => savedIds.push(item.executionId),
+    });
+    assert.equal(authCalls, 1);
+    assert.deepEqual(savedIds, ["ex_a"]);
+    assert.deepEqual(partial.succeededIds, ["ex_a"]);
+    assert.match(partial.failedError?.message || "", /通信エラー/);
   } finally {
     CONFIG.GOOGLE_CLIENT_ID = origClientId;
   }

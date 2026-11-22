@@ -1,20 +1,63 @@
 // SCR-01: ワークアウト一覧画面
-import { calcWorkoutTotalSeconds, escapeHtml, formatDuration } from "../models.js";
+import { calcWorkoutTotalSeconds, escapeHtml, formatDateTime, formatDuration } from "../models.js";
 
 /** 一覧画面の描画とイベント設定 */
 export function renderWorkoutListView(container, state, actions) {
   const { workouts, pendingResults } = state.data;
   const sorted = [...workouts].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const unsavedList = (pendingResults || []).filter((r) => r.calendarStatus !== "saved");
+  const isExpanded = Boolean(state.pendingExpanded);
+  const batchStatus = state.pendingBatchStatus || { isSaving: false, progressText: "", errorMessage: "" };
+  const retryAllLabel = batchStatus.isSaving
+    ? batchStatus.progressText || "保存中..."
+    : unsavedList.length === 1
+      ? "再試行"
+      : "まとめて再試行";
+
+  const pendingDetailsHtml = isExpanded
+    ? `
+      <ul class="pending-list">
+        ${unsavedList
+          .map(
+            (item) => `
+              <li class="pending-item" data-execution-id="${escapeHtml(item.executionId)}">
+                <div class="pending-item-info">
+                  <div class="pending-item-title">${escapeHtml(item.workoutName)}</div>
+                  <div class="muted-text pending-item-time">
+                    ${escapeHtml(formatDateTime(item.startedAt))} 〜 ${escapeHtml(formatDateTime(item.completedAt))}
+                  </div>
+                </div>
+                <div class="pending-item-actions">
+                  <button type="button" class="btn btn-primary btn-sm" data-pending-action="retry" data-execution-id="${escapeHtml(item.executionId)}" ${batchStatus.isSaving ? "disabled" : ""}>再試行</button>
+                  <button type="button" class="btn btn-danger btn-sm" data-pending-action="delete" data-execution-id="${escapeHtml(item.executionId)}" ${batchStatus.isSaving ? "disabled" : ""}>削除</button>
+                </div>
+              </li>
+            `
+          )
+          .join("")}
+      </ul>
+    `
+    : "";
+
+  const pendingErrorHtml = batchStatus.errorMessage
+    ? `<div class="pending-batch-error" role="alert">${escapeHtml(batchStatus.errorMessage)}</div>`
+    : "";
 
   const pendingBannerHtml = unsavedList.length
     ? `
-      <div class="alert-banner warn" role="status">
-        <div>
-          <strong>未保存の完了履歴が ${unsavedList.length} 件あります</strong>
-          <div class="muted-text">${escapeHtml(unsavedList[0].workoutName)}</div>
+      <div class="alert-banner warn pending-banner" role="status">
+        <div class="pending-banner-header">
+          <div>
+            <strong>未保存の完了履歴が ${unsavedList.length} 件あります</strong>
+            ${!isExpanded ? `<div class="muted-text">${escapeHtml(unsavedList[0].workoutName)}${unsavedList.length > 1 ? " ほか" : ""}</div>` : ""}
+          </div>
+          <div class="pending-banner-actions">
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-pending-details" aria-expanded="${isExpanded ? "true" : "false"}">${isExpanded ? "閉じる" : "詳細"}</button>
+            <button type="button" class="btn btn-warn btn-sm" id="btn-retry-all-pending" ${batchStatus.isSaving ? "disabled" : ""}>${escapeHtml(retryAllLabel)}</button>
+          </div>
         </div>
-        <button type="button" class="btn btn-warn" id="btn-retry-pending">保存を再試行</button>
+        ${pendingErrorHtml}
+        ${pendingDetailsHtml}
       </div>
     `
     : "";
@@ -63,9 +106,25 @@ export function renderWorkoutListView(container, state, actions) {
     actions.onCreate();
   });
 
-  // 未保存履歴の再試行（フェーズ5でSCR-05へ接続）
-  container.querySelector("#btn-retry-pending")?.addEventListener("click", () => {
-    actions.onRetryPending(unsavedList[0]);
+  // 未保存履歴バナー操作（詳細トグル・まとめて再試行）
+  container.querySelector("#btn-toggle-pending-details")?.addEventListener("click", () => {
+    actions.onTogglePendingDetails();
+  });
+  container.querySelector("#btn-retry-all-pending")?.addEventListener("click", () => {
+    actions.onRetryAllPending();
+  });
+
+  // 未保存履歴の個別操作（再試行・削除）
+  container.querySelectorAll("[data-pending-action]").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const executionId = btn.dataset.executionId;
+      const action = btn.dataset.pendingAction;
+      const target = unsavedList.find((item) => item.executionId === executionId);
+      if (!target) return;
+
+      if (action === "retry") actions.onRetryPending(target);
+      if (action === "delete") actions.onDeletePending(target);
+    });
   });
 
   // カードボタン操作

@@ -2,7 +2,10 @@
 import {
   createDefaultWorkout,
   escapeHtml,
+  formatDateTime,
+  removePendingResult,
 } from "./models.js";
+import { savePendingResultsToGoogleCalendar } from "./calendar.js";
 import { loadAppData, saveAppData } from "./storage.js";
 import {
   SpeechGuideController,
@@ -26,6 +29,8 @@ const appState = {
   editingIsNew: false,
   selectedWorkoutId: null,
   latestResult: null,
+  pendingExpanded: false,
+  pendingBatchStatus: { isSaving: false, progressText: "", errorMessage: "" },
   cleanupCurrentView: null,
 };
 
@@ -77,8 +82,81 @@ function render() {
         render();
       },
       onRetryPending: (pendingResult) => {
+        appState.pendingBatchStatus = { isSaving: false, progressText: "", errorMessage: "" };
         appState.latestResult = pendingResult;
         appState.currentScreen = "SCR-05";
+        render();
+      },
+      onTogglePendingDetails: () => {
+        appState.pendingExpanded = !appState.pendingExpanded;
+        render();
+      },
+      onRetryAllPending: async () => {
+        if (appState.pendingBatchStatus.isSaving) return;
+        const unsaved = (appState.data.pendingResults || []).filter(
+          (r) => r.calendarStatus !== "saved"
+        );
+        if (unsaved.length === 0) return;
+
+        appState.pendingBatchStatus = {
+          isSaving: true,
+          progressText: "認証中...",
+          errorMessage: "",
+        };
+        render();
+
+        try {
+          const { failedError } = await savePendingResultsToGoogleCalendar(unsaved, {
+            onProgress: (current, total) => {
+              appState.pendingBatchStatus = {
+                isSaving: true,
+                progressText: `保存中... (${current}/${total})`,
+                errorMessage: "",
+              };
+              render();
+            },
+            onItemSaved: (savedItem) => {
+              appState.data.pendingResults = removePendingResult(
+                appState.data.pendingResults,
+                savedItem.executionId
+              );
+              saveAppData(appState.data);
+            },
+          });
+
+          const remaining = (appState.data.pendingResults || []).filter(
+            (r) => r.calendarStatus !== "saved"
+          );
+          if (remaining.length === 0) {
+            appState.pendingExpanded = false;
+          }
+          appState.pendingBatchStatus = {
+            isSaving: false,
+            progressText: "",
+            errorMessage: failedError
+              ? failedError.message || "一部の履歴の保存に失敗しました。"
+              : "",
+          };
+        } catch (err) {
+          appState.pendingBatchStatus = {
+            isSaving: false,
+            progressText: "",
+            errorMessage: err?.message || "Googleカレンダーへの保存に失敗しました。",
+          };
+        }
+        render();
+      },
+      onDeletePending: (pendingResult) => {
+        if (!pendingResult) return;
+        const label = formatDateTime(pendingResult.completedAt) || "日時不明";
+        if (!window.confirm(`「${pendingResult.workoutName}」（${label}）の未保存履歴を削除しますか？`)) {
+          return;
+        }
+        appState.data.pendingResults = removePendingResult(
+          appState.data.pendingResults,
+          pendingResult.executionId
+        );
+        saveAppData(appState.data);
         render();
       },
     });
@@ -224,9 +302,7 @@ function render() {
           };
         }
         // 保存完了した履歴は未保存リストから除去
-        appState.data.pendingResults = (appState.data.pendingResults || []).filter(
-          (r) => r.executionId !== executionId
-        );
+        appState.data.pendingResults = removePendingResult(appState.data.pendingResults, executionId);
         saveAppData(appState.data);
       },
       onBackHome: () => {
