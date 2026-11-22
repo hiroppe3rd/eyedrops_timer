@@ -2,13 +2,19 @@
 :root {
   --bg: #f4f7fb;
   --surface: #ffffff;
+  --surface-alt: #f8fafc;
   --border: #dbe4ef;
   --text: #1e293b;
   --text-muted: #64748b;
   --primary: #0284c7;
   --primary-hover: #0369a1;
   --accent: #0d9488;
+  --warn: #b45309;
+  --warn-bg: #fef3c7;
+  --warn-border: #fcd34d;
   --danger: #dc2626;
+  --danger-bg: #fee2e2;
+  --danger-border: #fca5a5;
   --radius: 12px;
   --shadow: 0 4px 14px rgba(15, 23, 42, 0.06);
 }
@@ -89,29 +95,54 @@ body {
   color: var(--primary);
 }
 
+/* ビューヘッダー */
+.view-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.view-header h1 {
+  margin: 0;
+  font-size: 1.3rem;
+}
+
 /* 共通カード・ボタン */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
-  padding: 20px;
+  padding: 18px;
   box-shadow: var(--shadow);
-  margin-bottom: 16px;
+  margin-bottom: 14px;
 }
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 8px 16px;
+  padding: 8px 14px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.92rem;
+  font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: none;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  padding: 5px 10px;
+  font-size: 0.82rem;
 }
 
 .btn-primary {
@@ -120,12 +151,253 @@ body {
   color: #ffffff;
 }
 
-.btn-primary:hover {
+.btn-primary:hover:not(:disabled) {
   background: var(--primary-hover);
 }
 
-.btn-secondary:hover {
+.btn-secondary:hover:not(:disabled) {
   background: #f1f5f9;
+}
+
+.btn-warn {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+  color: var(--warn);
+}
+
+.btn-danger {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+.btn-duration {
+  min-width: 92px;
+  background: var(--surface-alt);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.btn-duration:hover {
+  background: #e0f2fe;
+}
+
+.muted-text {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* 通知・エラーバナー */
+.alert-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 16px;
+  border-radius: 10px;
+  margin-bottom: 16px;
+  border: 1px solid var(--border);
+}
+
+.alert-banner.warn {
+  background: var(--warn-bg);
+  border-color: var(--warn-border);
+}
+
+.alert-banner.error {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
+  display: block;
+}
+
+.alert-banner ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+/* ワークアウト一覧 */
+.workout-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.workout-title-wrap,
+.med-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.workout-title {
+  margin: 0;
+  font-size: 1.08rem;
+}
+
+.drag-handle {
+  cursor: grab;
+  color: var(--text-muted);
+  font-size: 1.1rem;
+  user-select: none;
+  padding: 2px 4px;
+}
+
+.meta-pill {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  background: var(--surface-alt);
+  border: 1px solid var(--border);
+  padding: 3px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+.workout-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.is-dragging {
+  opacity: 0.5;
+}
+
+.drag-over {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+}
+
+.empty-state {
+  text-align: center;
+  padding: 32px 18px;
+}
+
+/* フォーム */
+.form-group {
+  margin-bottom: 14px;
+}
+
+.field-label {
+  display: block;
+  font-size: 0.84rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.text-input,
+.select-input {
+  width: 100%;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.text-input:focus,
+.select-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.15);
+}
+
+.med-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--bg);
+}
+
+.step-field {
+  margin-bottom: 10px;
+}
+
+.step-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.step-input-row .text-input {
+  flex: 1;
+}
+
+/* 時間設定モーダル */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  z-index: 1000;
+}
+
+.modal-dialog {
+  width: 100%;
+  max-width: 440px;
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 20px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.2);
+}
+
+.modal-dialog h2 {
+  margin: 0 0 14px;
+  font-size: 1.12rem;
+}
+
+.modal-section {
+  margin-bottom: 16px;
+}
+
+.template-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.btn-chip {
+  padding: 6px 10px;
+  font-size: 0.84rem;
+}
+
+.btn-chip:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.manual-duration-row {
+  display: grid;
+  grid-template-columns: 1fr 90px;
+  gap: 8px;
+}
+
+.duration-preview {
+  margin-top: 8px;
+  font-size: 0.86rem;
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.duration-preview.is-error {
+  color: var(--danger);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
 }
 
 .legal-doc h1 {
