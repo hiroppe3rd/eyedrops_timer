@@ -9,8 +9,8 @@ export function isClientIdConfigured(clientId = CONFIG.GOOGLE_CLIENT_ID) {
 /** カレンダー登録用イベントペイロードを生成 */
 export function buildCalendarEventPayload(result) {
   return {
-    summary: result.workoutName,
-    description: "点眼タイマーで完了したワークアウト記録",
+    summary: result.routineName,
+    description: "点眼タイマーで完了したルーティン記録",
     start: {
       dateTime: result.startedAt,
     },
@@ -115,7 +115,7 @@ export async function insertCalendarEvent(accessToken, result) {
 }
 
 /** 認証からカレンダー登録までを実行 */
-export async function saveWorkoutToGoogleCalendar(result) {
+export async function saveRoutineToGoogleCalendar(result) {
   const accessToken = await requestGoogleAccessToken();
   return insertCalendarEvent(accessToken, result);
 }

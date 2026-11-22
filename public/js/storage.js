@@ -1,12 +1,12 @@
 // localStorage 永続化・スキーマバージョン管理
-export const SCHEMA_VERSION = 1;
+export const SCHEMA_VERSION = 2;
 const STORAGE_KEY = "eyedrops_timer_data";
 
 /** 初期データ構造の生成 */
 function createInitialData() {
   return {
     schemaVersion: SCHEMA_VERSION,
-    workouts: [],
+    routines: [],
     voiceSettings: {
       voiceName: "Google 日本語",
       rate: 1.0,
@@ -45,15 +45,28 @@ function migrateData(data) {
     return createInitialData();
   }
   const defaults = createInitialData();
+  // 旧スキーマ(workouts / workoutName)からの移行に対応
+  const routines = Array.isArray(data.routines)
+    ? data.routines
+    : Array.isArray(data.workouts)
+      ? data.workouts
+      : defaults.routines;
+  const pendingResults = Array.isArray(data.pendingResults)
+    ? data.pendingResults.map((item) => {
+        if (!item || typeof item !== "object") return item;
+        if (item.routineName !== undefined) return item;
+        const { workoutName, ...rest } = item;
+        return { ...rest, routineName: workoutName ?? "" };
+      })
+    : defaults.pendingResults;
+
   return {
     schemaVersion: SCHEMA_VERSION,
-    workouts: Array.isArray(data.workouts) ? data.workouts : defaults.workouts,
+    routines,
     voiceSettings: {
       ...defaults.voiceSettings,
       ...(data.voiceSettings || {}),
     },
-    pendingResults: Array.isArray(data.pendingResults)
-      ? data.pendingResults
-      : defaults.pendingResults,
+    pendingResults,
   };
 }

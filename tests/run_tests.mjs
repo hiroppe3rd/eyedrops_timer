@@ -7,14 +7,14 @@ import path from "node:path";
 import {
   DURATION_TEMPLATES,
   STEP_TYPES,
-  calcWorkoutTotalSeconds,
-  createDefaultWorkout,
+  calcRoutineTotalSeconds,
+  createDefaultRoutine,
   formatDateTime,
   formatDuration,
-  normalizeWorkoutSteps,
+  normalizeRoutineSteps,
   parseDurationInput,
   removePendingResult,
-  validateWorkout,
+  validateRoutine,
 } from "../public/js/models.js";
 import { SCHEMA_VERSION, loadAppData, saveAppData } from "../public/js/storage.js";
 import { buildExecutionQueue, createTimerRunner, formatClock } from "../public/js/timerEngine.js";
@@ -27,7 +27,7 @@ import {
   buildCalendarEventPayload,
   isClientIdConfigured,
   savePendingResultsToGoogleCalendar,
-  saveWorkoutToGoogleCalendar,
+  saveRoutineToGoogleCalendar,
 } from "../public/js/calendar.js";
 import { CONFIG } from "../public/js/config.js";
 
@@ -65,12 +65,12 @@ await test("時間テンプレート11種・手入力換算・バリデーショ
   assert.equal(formatDuration(90), "1分30秒");
   assert.equal(formatDuration(0), "0秒（省略）");
 
-  const wo = createDefaultWorkout();
-  assert.deepEqual(validateWorkout(wo).length, 2);
+  const rt = createDefaultRoutine();
+  assert.deepEqual(validateRoutine(rt).length, 2);
 
-  wo.name = "朝の点眼";
-  wo.medications[0].name = "ヒアルロン酸";
-  wo.medications.push({
+  rt.name = "朝の点眼";
+  rt.medications[0].name = "ヒアルロン酸";
+  rt.medications.push({
     id: "m2",
     name: "抗菌目薬",
     steps: [
@@ -79,17 +79,17 @@ await test("時間テンプレート11種・手入力換算・バリデーショ
       { type: STEP_TYPES.WAIT, label: "待機", durationSec: 300 },
     ],
   });
-  wo.medications = normalizeWorkoutSteps(wo.medications);
-  assert.equal(wo.medications[0].steps.length, 3);
+  rt.medications = normalizeRoutineSteps(rt.medications);
+  assert.equal(rt.medications[0].steps.length, 3);
   // 最後の薬に待機工程がないこと
-  assert.equal(wo.medications[1].steps.length, 2);
-  assert.equal(validateWorkout(wo).length, 0);
-  assert.equal(calcWorkoutTotalSeconds(wo), 15 + 60 + 300 + 10 + 60);
+  assert.equal(rt.medications[1].steps.length, 2);
+  assert.equal(validateRoutine(rt).length, 0);
+  assert.equal(calcRoutineTotalSeconds(rt), 15 + 60 + 300 + 10 + 60);
 
   // 未保存履歴の削除・日時整形ヘルパー検証
   const pending = [
-    { executionId: "ex_1", workoutName: "朝" },
-    { executionId: "ex_2", workoutName: "夜" },
+    { executionId: "ex_1", routineName: "朝" },
+    { executionId: "ex_2", routineName: "夜" },
   ];
   const afterRemove = removePendingResult(pending, "ex_1");
   assert.equal(afterRemove.length, 1);
@@ -111,16 +111,31 @@ await test("localStorage 永続化・復元・スキーマバージョン", () =
   assert.equal(initial.voiceSettings.voiceName, "Google 日本語");
   assert.equal(initial.voiceSettings.rate, 1.0);
 
-  initial.workouts.push({ id: "wo_1", name: "夜点眼", order: 0, medications: [] });
+  initial.routines.push({ id: "rt_1", name: "夜点眼", order: 0, medications: [] });
   initial.voiceSettings = { voiceName: "Microsoft Haruka", rate: 1.15 };
-  initial.pendingResults.push({ executionId: "ex_1", workoutName: "夜点眼", calendarStatus: "unsaved" });
+  initial.pendingResults.push({ executionId: "ex_1", routineName: "夜点眼", calendarStatus: "unsaved" });
   saveAppData(initial);
 
   const reloaded = loadAppData();
-  assert.equal(reloaded.workouts.length, 1);
+  assert.equal(reloaded.routines.length, 1);
   assert.equal(reloaded.voiceSettings.voiceName, "Microsoft Haruka");
   assert.equal(reloaded.voiceSettings.rate, 1.15);
   assert.equal(reloaded.pendingResults.length, 1);
+
+  // 旧スキーマ(workouts / workoutName)からのマイグレーション確認
+  store.set(
+    "eyedrops_timer_data",
+    JSON.stringify({
+      schemaVersion: 1,
+      workouts: [{ id: "wo_legacy", name: "旧ルーティン", order: 0, medications: [] }],
+      pendingResults: [{ executionId: "ex_old", workoutName: "旧ルーティン", calendarStatus: "unsaved" }],
+    })
+  );
+  const migrated = loadAppData();
+  assert.equal(migrated.schemaVersion, SCHEMA_VERSION);
+  assert.equal(migrated.routines.length, 1);
+  assert.equal(migrated.routines[0].name, "旧ルーティン");
+  assert.equal(migrated.pendingResults[0].routineName, "旧ルーティン");
 
   // 破損JSON時もクラッシュしないこと
   store.set("eyedrops_timer_data", "{broken-json");
@@ -239,7 +254,7 @@ await test("Googleカレンダー連携: 認証拒否・通信失敗・再試行
   CONFIG.GOOGLE_CLIENT_ID = "test-client-id.apps.googleusercontent.com";
 
   const sampleResult = {
-    workoutName: "朝の点眼",
+    routineName: "朝の点眼",
     startedAt: "2026-11-22T08:00:00.000Z",
     completedAt: "2026-11-22T08:05:00.000Z",
   };
@@ -268,7 +283,7 @@ await test("Googleカレンダー連携: 認証拒否・通信失敗・再試行
   try {
     // 認証拒否
     await assert.rejects(
-      () => saveWorkoutToGoogleCalendar(sampleResult),
+      () => saveRoutineToGoogleCalendar(sampleResult),
       /認証・権限付与が拒否/
     );
 
@@ -278,7 +293,7 @@ await test("Googleカレンダー連携: 認証拒否・通信失敗・再試行
       throw new Error("Network down");
     };
     await assert.rejects(
-      () => saveWorkoutToGoogleCalendar(sampleResult),
+      () => saveRoutineToGoogleCalendar(sampleResult),
       /通信エラーが発生しました/
     );
 
@@ -291,7 +306,7 @@ await test("Googleカレンダー連携: 認証拒否・通信失敗・再試行
         json: async () => ({ id: "evt_1", htmlLink: "https://calendar.google.com/event?eid=1" }),
       };
     };
-    const created = await saveWorkoutToGoogleCalendar(sampleResult);
+    const created = await saveRoutineToGoogleCalendar(sampleResult);
     assert.equal(created.id, "evt_1");
 
     // まとめて再試行: 1回認証で部分成功・全件成功を検証

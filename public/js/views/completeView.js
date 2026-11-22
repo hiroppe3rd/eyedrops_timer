@@ -1,5 +1,5 @@
 // SCR-05: 完了・Googleカレンダー保存画面
-import { saveWorkoutToGoogleCalendar } from "../calendar.js";
+import { saveRoutineToGoogleCalendar } from "../calendar.js";
 import { escapeHtml, formatDateTime } from "../models.js";
 
 /** 完了画面の描画と保存制御 */
@@ -8,7 +8,7 @@ export function renderCompleteView(container, result, actions) {
     container.innerHTML = `
       <div class="view-header">
         <span></span>
-        <h1>ワークアウト完了</h1>
+        <h1>ルーティン完了</h1>
         <button type="button" class="btn btn-secondary" id="btn-done-home">一覧へ</button>
       </div>
       <section class="card">
@@ -58,7 +58,7 @@ export function renderCompleteView(container, result, actions) {
     container.innerHTML = `
       <div class="view-header">
         <span></span>
-        <h1>ワークアウト完了</h1>
+        <h1>ルーティン完了</h1>
         <button type="button" class="btn btn-secondary" id="btn-done-home">一覧へ</button>
       </div>
 
@@ -67,8 +67,8 @@ export function renderCompleteView(container, result, actions) {
           ✓ すべての工程が完了しました
         </div>
         <div class="result-detail">
-          <div class="field-label">ワークアウト名</div>
-          <div style="font-weight:700; margin-bottom:10px;">${escapeHtml(result.workoutName)}</div>
+          <div class="field-label">ルーティン名</div>
+          <div style="font-weight:700; margin-bottom:10px;">${escapeHtml(result.routineName)}</div>
 
           <div class="field-label">開始日時 〜 完了日時</div>
           <div style="margin-bottom:10px;">
@@ -95,7 +95,7 @@ export function renderCompleteView(container, result, actions) {
       renderContent();
 
       try {
-        const created = await saveWorkoutToGoogleCalendar(result);
+        const created = await saveRoutineToGoogleCalendar(result);
         currentStatus = "saved";
         createdEventUrl = created?.htmlLink || "";
         actions.onSaved(result.executionId, createdEventUrl);

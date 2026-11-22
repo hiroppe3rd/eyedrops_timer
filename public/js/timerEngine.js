@@ -1,13 +1,13 @@
 // タイマー実行エンジン（時刻差分計算・Wake Lock管理）
 import { STEP_TYPES, createId } from "./models.js";
 
-/** ワークアウトから実行工程キューを生成（0秒工程は除外） */
-export function buildExecutionQueue(workout) {
-  if (!workout || !Array.isArray(workout.medications)) return [];
+/** ルーティンから実行工程キューを生成（0秒工程は除外） */
+export function buildExecutionQueue(routine) {
+  if (!routine || !Array.isArray(routine.medications)) return [];
   const queue = [];
-  const totalMeds = workout.medications.length;
+  const totalMeds = routine.medications.length;
 
-  workout.medications.forEach((med, medIdx) => {
+  routine.medications.forEach((med, medIdx) => {
     const isLastMed = medIdx === totalMeds - 1;
     let isFirstStepOfMed = true;
 

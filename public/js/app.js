@@ -1,6 +1,6 @@
 // 点眼タイマー SPA エントリーポイント
 import {
-  createDefaultWorkout,
+  createDefaultRoutine,
   escapeHtml,
   formatDateTime,
   removePendingResult,
@@ -12,8 +12,8 @@ import {
   buildStepCompleteSpeech,
   buildStepStartSpeech,
 } from "./speech.js";
-import { renderWorkoutListView } from "./views/workoutListView.js";
-import { renderWorkoutEditView } from "./views/workoutEditView.js";
+import { renderRoutineListView } from "./views/routineListView.js";
+import { renderRoutineEditView } from "./views/routineEditView.js";
 import { renderConfirmView } from "./views/confirmView.js";
 import { renderTimerView } from "./views/timerView.js";
 import { renderCompleteView } from "./views/completeView.js";
@@ -25,9 +25,9 @@ const speech = new SpeechGuideController(initialData.voiceSettings);
 const appState = {
   data: initialData,
   currentScreen: "SCR-01",
-  editingWorkout: null,
+  editingRoutine: null,
   editingIsNew: false,
-  selectedWorkoutId: null,
+  selectedRoutineId: null,
   latestResult: null,
   pendingExpanded: false,
   pendingBatchStatus: { isSaving: false, progressText: "", errorMessage: "" },
@@ -43,41 +43,41 @@ function render() {
   }
 
   if (appState.currentScreen === "SCR-01") {
-    renderWorkoutListView(appContainer, appState, {
+    renderRoutineListView(appContainer, appState, {
       onCreate: () => {
-        appState.editingWorkout = createDefaultWorkout();
+        appState.editingRoutine = createDefaultRoutine();
         appState.editingIsNew = true;
         appState.currentScreen = "SCR-02";
         render();
       },
       onEdit: (id) => {
-        const target = appState.data.workouts.find((w) => w.id === id);
+        const target = appState.data.routines.find((r) => r.id === id);
         if (!target) return;
-        appState.editingWorkout = structuredClone(target);
+        appState.editingRoutine = structuredClone(target);
         appState.editingIsNew = false;
         appState.currentScreen = "SCR-02";
         render();
       },
       onDelete: (id) => {
-        const target = appState.data.workouts.find((w) => w.id === id);
+        const target = appState.data.routines.find((r) => r.id === id);
         if (!target) return;
         if (!window.confirm(`「${target.name}」を削除しますか？`)) return;
-        appState.data.workouts = appState.data.workouts
-          .filter((w) => w.id !== id)
-          .map((w, idx) => ({ ...w, order: idx }));
+        appState.data.routines = appState.data.routines
+          .filter((r) => r.id !== id)
+          .map((r, idx) => ({ ...r, order: idx }));
         saveAppData(appState.data);
         render();
       },
       onReorder: (orderedIds) => {
         const orderMap = new Map(orderedIds.map((id, idx) => [id, idx]));
-        appState.data.workouts = appState.data.workouts
-          .map((w) => ({ ...w, order: orderMap.get(w.id) ?? w.order }))
+        appState.data.routines = appState.data.routines
+          .map((r) => ({ ...r, order: orderMap.get(r.id) ?? r.order }))
           .sort((a, b) => a.order - b.order);
         saveAppData(appState.data);
         render();
       },
       onStart: (id) => {
-        appState.selectedWorkoutId = id;
+        appState.selectedRoutineId = id;
         appState.currentScreen = "SCR-03";
         render();
       },
@@ -149,7 +149,7 @@ function render() {
       onDeletePending: (pendingResult) => {
         if (!pendingResult) return;
         const label = formatDateTime(pendingResult.completedAt) || "日時不明";
-        if (!window.confirm(`「${pendingResult.workoutName}」（${label}）の未保存履歴を削除しますか？`)) {
+        if (!window.confirm(`「${pendingResult.routineName}」（${label}）の未保存履歴を削除しますか？`)) {
           return;
         }
         appState.data.pendingResults = removePendingResult(
@@ -164,29 +164,29 @@ function render() {
   }
 
   if (appState.currentScreen === "SCR-02") {
-    renderWorkoutEditView(appContainer, appState.editingWorkout, appState.editingIsNew, {
+    renderRoutineEditView(appContainer, appState.editingRoutine, appState.editingIsNew, {
       onCancel: () => {
-        appState.editingWorkout = null;
+        appState.editingRoutine = null;
         appState.currentScreen = "SCR-01";
         render();
       },
-      onSave: (savedWorkout) => {
+      onSave: (savedRoutine) => {
         const now = new Date().toISOString();
         if (appState.editingIsNew) {
-          const nextOrder = appState.data.workouts.length;
-          appState.data.workouts.push({
-            ...savedWorkout,
+          const nextOrder = appState.data.routines.length;
+          appState.data.routines.push({
+            ...savedRoutine,
             order: nextOrder,
             createdAt: now,
             updatedAt: now,
           });
         } else {
-          appState.data.workouts = appState.data.workouts.map((w) =>
-            w.id === savedWorkout.id ? { ...savedWorkout, updatedAt: now } : w
+          appState.data.routines = appState.data.routines.map((r) =>
+            r.id === savedRoutine.id ? { ...savedRoutine, updatedAt: now } : r
           );
         }
         saveAppData(appState.data);
-        appState.editingWorkout = null;
+        appState.editingRoutine = null;
         appState.currentScreen = "SCR-01";
         render();
       },
@@ -195,15 +195,15 @@ function render() {
   }
 
   if (appState.currentScreen === "SCR-03") {
-    const workout = appState.data.workouts.find((w) => w.id === appState.selectedWorkoutId);
-    if (!workout) {
+    const routine = appState.data.routines.find((r) => r.id === appState.selectedRoutineId);
+    if (!routine) {
       appState.currentScreen = "SCR-01";
       render();
       return;
     }
     appState.cleanupCurrentView = renderConfirmView(
       appContainer,
-      workout,
+      routine,
       appState.data.voiceSettings,
       speech,
       {
@@ -229,13 +229,13 @@ function render() {
   }
 
   if (appState.currentScreen === "SCR-04") {
-    const workout = appState.data.workouts.find((w) => w.id === appState.selectedWorkoutId);
-    if (!workout) {
+    const routine = appState.data.routines.find((r) => r.id === appState.selectedRoutineId);
+    if (!routine) {
       appState.currentScreen = "SCR-01";
       render();
       return;
     }
-    const timerCleanup = renderTimerView(appContainer, workout, {
+    const timerCleanup = renderTimerView(appContainer, routine, {
       bindSubtitle: (fn) => {
         speech.onSubtitle = fn;
       },

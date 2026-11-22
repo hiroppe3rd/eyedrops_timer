@@ -399,7 +399,7 @@
 
       <div class="nav-group">
         <div class="nav-title">各画面仕様</div>
-        <a href="#scr-01">SCR-01 ワークアウト一覧</a>
+        <a href="#scr-01">SCR-01 ルーティン一覧</a>
         <a href="#scr-02">SCR-02 作成・編集</a>
         <a href="#scr-03">SCR-03 開始前確認・音声設定</a>
         <a href="#scr-04">SCR-04 タイマー実行</a>
@@ -417,7 +417,7 @@
       <div class="doc-header">
         <h2>点眼タイマー 画面仕様書</h2>
         <p>
-          点眼薬と点眼前後の工程をワークアウトとして管理し、音声ガイド付きタイマーで順番に実行、完了後にGoogleカレンダーへ記録するWebアプリの画面仕様書です。
+          点眼薬と点眼前後の工程をルーティンとして管理し、音声ガイド付きタイマーで順番に実行、完了後にGoogleカレンダーへ記録するWebアプリの画面仕様書です。
         </p>
         <div class="badges">
           <span class="badge">ブラウザー完結 (localStorage)</span>
@@ -430,12 +430,12 @@
       <section id="overview" class="card">
         <h3>1. 画面一覧と遷移フロー</h3>
         <div class="flow-diagram">
-          <div class="flow-node">SCR-01<br>ワークアウト一覧<small>作成/編集/削除/並替<br>未保存履歴バナー</small></div>
+          <div class="flow-node">SCR-01<br>ルーティン一覧<small>作成/編集/削除/並替<br>未保存履歴バナー</small></div>
           <span class="flow-arrow">⇄</span>
           <div class="flow-node">SCR-02<br>作成・編集<small>薬・工程設定<br>D&amp;D並替/検証</small></div>
         </div>
         <div class="flow-diagram">
-          <div class="flow-node">SCR-01<br>ワークアウト選択</div>
+          <div class="flow-node">SCR-01<br>ルーティン選択</div>
           <span class="flow-arrow">→</span>
           <div class="flow-node">SCR-03<br>開始前確認・音声設定<small>工程確認/音声テスト<br>音声アンロック</small></div>
           <span class="flow-arrow">→</span>
@@ -455,18 +455,18 @@
           <tbody>
             <tr>
               <td><code>SCR-01</code></td>
-              <td>ワークアウト一覧画面</td>
-              <td>保存済みワークアウトの一覧表示、ドラッグ＆ドロップ並替、削除、新規作成／編集／実行への遷移。未保存の実行結果がある場合は再試行導線を表示。</td>
+              <td>ルーティン一覧画面</td>
+              <td>保存済みルーティンの一覧表示、ドラッグ＆ドロップ並替、削除、新規作成／編集／実行への遷移。未保存の実行結果がある場合は再試行導線を表示。</td>
             </tr>
             <tr>
               <td><code>SCR-02</code></td>
-              <td>ワークアウト作成・編集画面</td>
-              <td>ワークアウト名、点眼薬の追加・削除・並替、各工程（準備／直後の瞑想／次の点眼までの待機）の表示名と秒数設定、入力検証。</td>
+              <td>ルーティン作成・編集画面</td>
+              <td>ルーティン名、点眼薬の追加・削除・並替、各工程（準備／直後の瞑想／次の点眼までの待機）の表示名と秒数設定、入力検証。</td>
             </tr>
             <tr>
               <td><code>SCR-03</code></td>
               <td>開始前確認・音声設定画面</td>
-              <td>選択ワークアウトの全工程確認、音声・速度（1.0x / 1.15x / 1.30x）の設定と「音声テスト」、開始操作による音声合成アンロック。</td>
+              <td>選択ルーティンの全工程確認、音声・速度（1.0x / 1.15x / 1.30x）の設定と「音声テスト」、開始操作による音声合成アンロック。</td>
             </tr>
             <tr>
               <td><code>SCR-04</code></td>
@@ -476,7 +476,7 @@
             <tr>
               <td><code>SCR-05</code></td>
               <td>完了・Googleカレンダー保存画面</td>
-              <td>ワークアウト名・開始日時・終了日時の表示、Google認証と <code>primary</code> カレンダーへの登録、失敗時の再試行、二重登録防止。</td>
+              <td>ルーティン名・開始日時・終了日時の表示、Google認証と <code>primary</code> カレンダーへの登録、失敗時の再試行、二重登録防止。</td>
             </tr>
           </tbody>
         </table>
@@ -495,7 +495,7 @@
 
       <!-- SCR-01 -->
       <section id="scr-01" class="card">
-        <h3><span class="scr-id">SCR-01</span> ワークアウト一覧画面</h3>
+        <h3><span class="scr-id">SCR-01</span> ルーティン一覧画面</h3>
         <div class="spec-grid">
           <div class="wireframe">
             <div class="wf-bar">
@@ -553,14 +553,14 @@
                   <td><code>SCR-02</code>（新規モード）へ遷移する。</td>
                 </tr>
                 <tr>
-                  <td>ワークアウトカード</td>
+                  <td>ルーティンカード</td>
                   <td>リスト項目</td>
                   <td>ドラッグ＆ドロップ（ハンドル <code>☰</code>）で表示順を並び替え、即座に <code>localStorage</code> へ保存。</td>
                 </tr>
                 <tr>
                   <td>確認して開始</td>
                   <td>ボタン</td>
-                  <td>対象ワークアウトを選択して <code>SCR-03</code> へ遷移する。</td>
+                  <td>対象ルーティンを選択して <code>SCR-03</code> へ遷移する。</td>
                 </tr>
                 <tr>
                   <td>編集 / 削除</td>
@@ -575,15 +575,15 @@
 
       <!-- SCR-02 -->
       <section id="scr-02" class="card">
-        <h3><span class="scr-id">SCR-02</span> ワークアウト作成・編集画面</h3>
+        <h3><span class="scr-id">SCR-02</span> ルーティン作成・編集画面</h3>
         <div class="spec-grid">
           <div class="wireframe">
             <div class="wf-bar">
               <span>← 戻る</span>
-              <span>ワークアウト編集</span>
+              <span>ルーティン編集</span>
               <span class="wf-btn primary">保存</span>
             </div>
-            <div>ワークアウト名（必須）</div>
+            <div>ルーティン名（必須）</div>
             <div class="wf-input">朝の点眼セット</div>
 
             <div class="wf-card">
@@ -658,7 +658,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td>ワークアウト名</td>
+                  <td>ルーティン名</td>
                   <td>必須入力（空白のみ不可）。未入力時はエラー表示し保存不可。</td>
                 </tr>
                 <tr>
@@ -827,13 +827,13 @@
         <div class="spec-grid">
           <div class="wireframe">
             <div class="wf-bar">
-              <span>ワークアウト完了</span>
+              <span>ルーティン完了</span>
               <span class="wf-btn">一覧へ</span>
             </div>
             <div class="wf-card">
               <div style="font-weight:700; font-size:1rem; color:var(--accent);">✓ すべての工程が完了しました</div>
               <hr style="border:none; border-top:1px solid #e2e8f0; margin:8px 0;">
-              <small>ワークアウト名</small>
+              <small>ルーティン名</small>
               <div><strong>朝の点眼セット</strong></div>
               <small>開始日時 〜 完了日時</small>
               <div>2026/11/22 08:10 〜 08:16</div>
@@ -882,10 +882,10 @@
         <h3>3. localStorage スキーマ設計（拡張性維持）</h3>
         <p>将来の項目追加や構造変更に備え、ルートオブジェクトに <code>schemaVersion</code> を保持します。</p>
         <pre>{
-  "schemaVersion": 1,
-  "workouts": [
+  "schemaVersion": 2,
+  "routines": [
     {
-      "id": "wo_001",
+      "id": "rt_001",
       "name": "朝の点眼セット",
       "order": 0,
       "createdAt": "2026-11-22T08:00:00.000Z",
@@ -910,7 +910,7 @@
   "pendingResults": [
     {
       "executionId": "exec_20261122_081600",
-      "workoutName": "朝の点眼セット",
+      "routineName": "朝の点眼セット",
       "startedAt": "2026-11-22T08:10:00.000Z",
       "completedAt": "2026-11-22T08:16:00.000Z",
       "calendarStatus": "unsaved"
@@ -943,7 +943,7 @@
             </tr>
             <tr>
               <td>登録イベント内容</td>
-              <td><code>summary</code>: ワークアウト名 ／ <code>start.dateTime</code>: 開始日時 ／ <code>end.dateTime</code>: 完了日時</td>
+              <td><code>summary</code>: ルーティン名 ／ <code>start.dateTime</code>: 開始日時 ／ <code>end.dateTime</code>: 完了日時</td>
             </tr>
           </tbody>
         </table>

@@ -44,10 +44,10 @@ export function createDefaultMedication(isLast = false) {
   };
 }
 
-/** 新規ワークアウトの初期データを生成 */
-export function createDefaultWorkout() {
+/** 新規ルーティンの初期データを生成 */
+export function createDefaultRoutine() {
   return {
-    id: createId("wo"),
+    id: createId("rt"),
     name: "",
     order: 0,
     createdAt: null,
@@ -68,11 +68,11 @@ export function formatDuration(seconds) {
   return `${mins}分${rem}秒`;
 }
 
-/** ワークアウトの合計予定秒数を算出 */
-export function calcWorkoutTotalSeconds(workout) {
-  if (!workout || !Array.isArray(workout.medications)) return 0;
-  return workout.medications.reduce((total, med, idx) => {
-    const isLast = idx === workout.medications.length - 1;
+/** ルーティンの合計予定秒数を算出 */
+export function calcRoutineTotalSeconds(routine) {
+  if (!routine || !Array.isArray(routine.medications)) return 0;
+  return routine.medications.reduce((total, med, idx) => {
+    const isLast = idx === routine.medications.length - 1;
     const medSec = (med.steps || []).reduce((sum, step) => {
       // 最後の薬の待機工程は合算しない
       if (isLast && step.type === STEP_TYPES.WAIT) return sum;
@@ -83,7 +83,7 @@ export function calcWorkoutTotalSeconds(workout) {
 }
 
 /** 最後の点眼薬に待機工程を含めないよう正規化 */
-export function normalizeWorkoutSteps(medications) {
+export function normalizeRoutineSteps(medications) {
   const lastIndex = medications.length - 1;
   return medications.map((med, idx) => {
     const isLast = idx === lastIndex;
@@ -131,19 +131,19 @@ export function parseDurationInput(rawValue, unit) {
   return rounded;
 }
 
-/** ワークアウト全体の入力検証 */
-export function validateWorkout(workout) {
+/** ルーティン全体の入力検証 */
+export function validateRoutine(routine) {
   const errors = [];
-  if (!workout.name || !workout.name.trim()) {
-    errors.push("ワークアウト名を入力してください。");
+  if (!routine.name || !routine.name.trim()) {
+    errors.push("ルーティン名を入力してください。");
   }
-  if (!Array.isArray(workout.medications) || workout.medications.length === 0) {
+  if (!Array.isArray(routine.medications) || routine.medications.length === 0) {
     errors.push("点眼薬を1つ以上登録してください。");
     return errors;
   }
 
-  const lastIndex = workout.medications.length - 1;
-  workout.medications.forEach((med, idx) => {
+  const lastIndex = routine.medications.length - 1;
+  routine.medications.forEach((med, idx) => {
     const medNum = idx + 1;
     if (!med.name || !med.name.trim()) {
       errors.push(`薬${medNum}の薬名を入力してください。`);

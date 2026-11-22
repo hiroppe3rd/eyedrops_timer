@@ -216,8 +216,8 @@ body {
   padding-left: 20px;
 }
 
-/* ワークアウト一覧 */
-.workout-card-head {
+/* ルーティン一覧 */
+.routine-card-head {
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -225,14 +225,14 @@ body {
   margin-bottom: 12px;
 }
 
-.workout-title-wrap,
+.routine-title-wrap,
 .med-title-wrap {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.workout-title {
+.routine-title {
   margin: 0;
   font-size: 1.08rem;
 }
@@ -255,7 +255,7 @@ body {
   white-space: nowrap;
 }
 
-.workout-card-actions {
+.routine-card-actions {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;

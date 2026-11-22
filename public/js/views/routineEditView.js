@@ -1,21 +1,21 @@
-// SCR-02: ワークアウト作成・編集画面（時間設定ダイアログ含む）
+// SCR-02: ルーティン作成・編集画面（時間設定ダイアログ含む）
 import {
   DURATION_TEMPLATES,
   STEP_TYPES,
   createDefaultMedication,
   escapeHtml,
   formatDuration,
-  normalizeWorkoutSteps,
+  normalizeRoutineSteps,
   parseDurationInput,
-  validateWorkout,
+  validateRoutine,
 } from "../models.js";
 
 /** 作成・編集画面の描画 */
-export function renderWorkoutEditView(container, draftWorkout, isNew, actions) {
+export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
   // 末尾の待機工程ルールを反映して作業コピーを作成
   let draft = {
-    ...draftWorkout,
-    medications: normalizeWorkoutSteps(draftWorkout.medications),
+    ...draftRoutine,
+    medications: normalizeRoutineSteps(draftRoutine.medications),
   };
   let validationErrors = [];
 
@@ -93,15 +93,15 @@ export function renderWorkoutEditView(container, draftWorkout, isNew, actions) {
     container.innerHTML = `
       <div class="view-header">
         <button type="button" class="btn btn-secondary" id="btn-back">← 戻る</button>
-        <h1>${isNew ? "ワークアウト新規作成" : "ワークアウト編集"}</h1>
-        <button type="button" class="btn btn-primary" id="btn-save-workout">保存</button>
+        <h1>${isNew ? "ルーティン新規作成" : "ルーティン編集"}</h1>
+        <button type="button" class="btn btn-primary" id="btn-save-routine">保存</button>
       </div>
       ${errorsHtml}
       <div class="card">
         <div class="form-group" style="margin-bottom:0;">
-          <label class="field-label" for="workout-name-input">ワークアウト名（必須）</label>
+          <label class="field-label" for="routine-name-input">ルーティン名（必須）</label>
           <input
-            id="workout-name-input"
+            id="routine-name-input"
             type="text"
             class="text-input"
             value="${escapeHtml(draft.name)}"
@@ -119,7 +119,7 @@ export function renderWorkoutEditView(container, draftWorkout, isNew, actions) {
   };
 
   const syncInputsFromDom = () => {
-    const nameInput = container.querySelector("#workout-name-input");
+    const nameInput = container.querySelector("#routine-name-input");
     if (nameInput) draft.name = nameInput.value;
 
     container.querySelectorAll(".med-name-input").forEach((input) => {
@@ -142,10 +142,10 @@ export function renderWorkoutEditView(container, draftWorkout, isNew, actions) {
       actions.onCancel();
     });
 
-    container.querySelector("#btn-save-workout")?.addEventListener("click", () => {
+    container.querySelector("#btn-save-routine")?.addEventListener("click", () => {
       syncInputsFromDom();
-      draft.medications = normalizeWorkoutSteps(draft.medications);
-      validationErrors = validateWorkout(draft);
+      draft.medications = normalizeRoutineSteps(draft.medications);
+      validationErrors = validateRoutine(draft);
       if (validationErrors.length > 0) {
         renderForm();
         window.scrollTo({ top: 0, behavior: "smooth" });
@@ -157,7 +157,7 @@ export function renderWorkoutEditView(container, draftWorkout, isNew, actions) {
     container.querySelector("#btn-add-med")?.addEventListener("click", () => {
       syncInputsFromDom();
       draft.medications.push(createDefaultMedication(true));
-      draft.medications = normalizeWorkoutSteps(draft.medications);
+      draft.medications = normalizeRoutineSteps(draft.medications);
       renderForm();
     });
 
@@ -167,7 +167,7 @@ export function renderWorkoutEditView(container, draftWorkout, isNew, actions) {
         const idx = Number(btn.dataset.medIdx);
         if (draft.medications.length <= 1) return;
         draft.medications.splice(idx, 1);
-        draft.medications = normalizeWorkoutSteps(draft.medications);
+        draft.medications = normalizeRoutineSteps(draft.medications);
         renderForm();
       });
     });
@@ -191,7 +191,7 @@ export function renderWorkoutEditView(container, draftWorkout, isNew, actions) {
       syncInputsFromDom();
       const [moved] = draft.medications.splice(fromIdx, 1);
       draft.medications.splice(toIdx, 0, moved);
-      draft.medications = normalizeWorkoutSteps(draft.medications);
+      draft.medications = normalizeRoutineSteps(draft.medications);
       renderForm();
     });
   };

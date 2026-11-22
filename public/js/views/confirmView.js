@@ -1,10 +1,10 @@
 // SCR-03: 開始前確認・音声設定画面
-import { calcWorkoutTotalSeconds, escapeHtml, formatDuration } from "../models.js";
+import { calcRoutineTotalSeconds, escapeHtml, formatDuration } from "../models.js";
 import { VOICE_RATES, resolvePreferredVoice } from "../speech.js";
 
 /** 開始前確認・音声設定画面の描画 */
-export function renderConfirmView(container, workout, voiceSettings, speech, actions) {
-  const totalSec = calcWorkoutTotalSeconds(workout);
+export function renderConfirmView(container, routine, voiceSettings, speech, actions) {
+  const totalSec = calcRoutineTotalSeconds(routine);
   let currentSettings = { ...voiceSettings };
 
   const renderContent = () => {
@@ -41,10 +41,10 @@ export function renderConfirmView(container, workout, voiceSettings, speech, act
       </div>
 
       <section class="card">
-        <h2 style="margin-top:0;">${escapeHtml(workout.name)}</h2>
+        <h2 style="margin-top:0;">${escapeHtml(routine.name)}</h2>
         <p>合計予定時間: <strong>${escapeHtml(formatDuration(totalSec))}</strong></p>
         <ol class="confirm-med-list">
-          ${workout.medications
+          ${routine.medications
             .map((m) => {
               const stepsText = m.steps
                 .filter((s) => Number(s.durationSec) > 0)
@@ -108,7 +108,7 @@ export function renderConfirmView(container, workout, voiceSettings, speech, act
 
     container.querySelector("#btn-voice-test")?.addEventListener("click", () => {
       speech.unlock();
-      const firstMed = workout.medications?.[0]?.name || "ヒアルロン酸";
+      const firstMed = routine.medications?.[0]?.name || "ヒアルロン酸";
       const sampleText = `${firstMed}、準備、20秒、開始します。`;
       speech.speak(sampleText, { interrupt: true, fallbackTone: "start" });
       const statusEl = container.querySelector("#voice-test-status");

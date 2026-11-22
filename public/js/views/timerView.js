@@ -8,8 +8,8 @@ import {
 } from "../timerEngine.js";
 
 /** タイマー実行画面の描画と制御 */
-export function renderTimerView(container, workout, actions) {
-  const queue = buildExecutionQueue(workout);
+export function renderTimerView(container, routine, actions) {
+  const queue = buildExecutionQueue(routine);
 
   if (queue.length === 0) {
     container.innerHTML = `
@@ -19,7 +19,7 @@ export function renderTimerView(container, workout, actions) {
         <span></span>
       </div>
       <section class="card">
-        <p>実行可能な工程（1秒以上）がありません。ワークアウト設定を見直してください。</p>
+        <p>実行可能な工程（1秒以上）がありません。ルーティン設定を見直してください。</p>
       </section>
     `;
     container.querySelector("#btn-empty-back")?.addEventListener("click", () => {
@@ -31,7 +31,7 @@ export function renderTimerView(container, workout, actions) {
   container.innerHTML = `
     <div class="view-header">
       <span class="meta-pill" id="timer-med-progress">薬 1 / 1</span>
-      <h1>${escapeHtml(workout.name)}</h1>
+      <h1>${escapeHtml(routine.name)}</h1>
       <span class="meta-pill" id="timer-wakelock-badge">Wake Lock 確認中</span>
     </div>
 
@@ -151,7 +151,7 @@ export function renderTimerView(container, workout, actions) {
       cleanup();
       actions.onComplete({
         ...resultMeta,
-        workoutName: workout.name,
+        routineName: routine.name,
         calendarStatus: "unsaved",
       });
     },

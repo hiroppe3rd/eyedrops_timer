@@ -1,10 +1,10 @@
-// SCR-01: ワークアウト一覧画面
-import { calcWorkoutTotalSeconds, escapeHtml, formatDateTime, formatDuration } from "../models.js";
+// SCR-01: ルーティン一覧画面
+import { calcRoutineTotalSeconds, escapeHtml, formatDateTime, formatDuration } from "../models.js";
 
 /** 一覧画面の描画とイベント設定 */
-export function renderWorkoutListView(container, state, actions) {
-  const { workouts, pendingResults } = state.data;
-  const sorted = [...workouts].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+export function renderRoutineListView(container, state, actions) {
+  const { routines, pendingResults } = state.data;
+  const sorted = [...routines].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const unsavedList = (pendingResults || []).filter((r) => r.calendarStatus !== "saved");
   const isExpanded = Boolean(state.pendingExpanded);
   const batchStatus = state.pendingBatchStatus || { isSaving: false, progressText: "", errorMessage: "" };
@@ -22,7 +22,7 @@ export function renderWorkoutListView(container, state, actions) {
             (item) => `
               <li class="pending-item" data-execution-id="${escapeHtml(item.executionId)}">
                 <div class="pending-item-info">
-                  <div class="pending-item-title">${escapeHtml(item.workoutName)}</div>
+                  <div class="pending-item-title">${escapeHtml(item.routineName)}</div>
                   <div class="muted-text pending-item-time">
                     ${escapeHtml(formatDateTime(item.startedAt))} 〜 ${escapeHtml(formatDateTime(item.completedAt))}
                   </div>
@@ -49,7 +49,7 @@ export function renderWorkoutListView(container, state, actions) {
         <div class="pending-banner-header">
           <div>
             <strong>未保存の完了履歴が ${unsavedList.length} 件あります</strong>
-            ${!isExpanded ? `<div class="muted-text">${escapeHtml(unsavedList[0].workoutName)}${unsavedList.length > 1 ? " ほか" : ""}</div>` : ""}
+            ${!isExpanded ? `<div class="muted-text">${escapeHtml(unsavedList[0].routineName)}${unsavedList.length > 1 ? " ほか" : ""}</div>` : ""}
           </div>
           <div class="pending-banner-actions">
             <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-pending-details" aria-expanded="${isExpanded ? "true" : "false"}">${isExpanded ? "閉じる" : "詳細"}</button>
@@ -63,24 +63,24 @@ export function renderWorkoutListView(container, state, actions) {
     : "";
 
   const listHtml = sorted.length
-    ? `<div class="workout-list" id="workout-list">
+    ? `<div class="routine-list" id="routine-list">
         ${sorted
-          .map((wo, idx) => {
-            const totalSec = calcWorkoutTotalSeconds(wo);
-            const medCount = (wo.medications || []).length;
+          .map((rt, idx) => {
+            const totalSec = calcRoutineTotalSeconds(rt);
+            const medCount = (rt.medications || []).length;
             return `
-              <article class="card workout-card" draggable="true" data-id="${escapeHtml(wo.id)}" data-index="${idx}">
-                <div class="workout-card-head">
-                  <div class="workout-title-wrap">
+              <article class="card routine-card" draggable="true" data-id="${escapeHtml(rt.id)}" data-index="${idx}">
+                <div class="routine-card-head">
+                  <div class="routine-title-wrap">
                     <span class="drag-handle" title="ドラッグして並び替え" aria-label="並び替えハンドル">☰</span>
-                    <h2 class="workout-title">${escapeHtml(wo.name)}</h2>
+                    <h2 class="routine-title">${escapeHtml(rt.name)}</h2>
                   </div>
                   <span class="meta-pill">薬${medCount}種 / 計 ${escapeHtml(formatDuration(totalSec))}</span>
                 </div>
-                <div class="workout-card-actions">
-                  <button type="button" class="btn btn-primary" data-action="start" data-id="${escapeHtml(wo.id)}">確認して開始</button>
-                  <button type="button" class="btn btn-secondary" data-action="edit" data-id="${escapeHtml(wo.id)}">編集</button>
-                  <button type="button" class="btn btn-danger" data-action="delete" data-id="${escapeHtml(wo.id)}">削除</button>
+                <div class="routine-card-actions">
+                  <button type="button" class="btn btn-primary" data-action="start" data-id="${escapeHtml(rt.id)}">確認して開始</button>
+                  <button type="button" class="btn btn-secondary" data-action="edit" data-id="${escapeHtml(rt.id)}">編集</button>
+                  <button type="button" class="btn btn-danger" data-action="delete" data-id="${escapeHtml(rt.id)}">削除</button>
                 </div>
               </article>
             `;
@@ -88,21 +88,21 @@ export function renderWorkoutListView(container, state, actions) {
           .join("")}
       </div>`
     : `<div class="card empty-state">
-        <p>登録されているワークアウトがありません。</p>
+        <p>登録されているルーティンがありません。</p>
         <p class="muted-text">「＋ 新規作成」から点眼薬と各工程を登録してください。</p>
       </div>`;
 
   container.innerHTML = `
     <div class="view-header">
-      <h1>ワークアウト一覧</h1>
-      <button type="button" class="btn btn-primary" id="btn-new-workout">＋ 新規作成</button>
+      <h1>ルーティン一覧</h1>
+      <button type="button" class="btn btn-primary" id="btn-new-routine">＋ 新規作成</button>
     </div>
     ${pendingBannerHtml}
     ${listHtml}
   `;
 
   // 新規作成
-  container.querySelector("#btn-new-workout")?.addEventListener("click", () => {
+  container.querySelector("#btn-new-routine")?.addEventListener("click", () => {
     actions.onCreate();
   });
 
@@ -139,7 +139,7 @@ export function renderWorkoutListView(container, state, actions) {
   });
 
   // ドラッグ＆ドロップ並び替え
-  setupDragAndDrop(container.querySelector("#workout-list"), sorted, actions.onReorder);
+  setupDragAndDrop(container.querySelector("#routine-list"), sorted, actions.onReorder);
 }
 
 /** リスト要素のドラッグ＆ドロップ並び替えを設定 */
@@ -147,7 +147,7 @@ function setupDragAndDrop(listEl, items, onReorder) {
   if (!listEl || items.length < 2) return;
   let draggingId = null;
 
-  listEl.querySelectorAll(".workout-card").forEach((card) => {
+  listEl.querySelectorAll(".routine-card").forEach((card) => {
     card.addEventListener("dragstart", (e) => {
       draggingId = card.dataset.id;
       card.classList.add("is-dragging");
@@ -157,7 +157,7 @@ function setupDragAndDrop(listEl, items, onReorder) {
     card.addEventListener("dragend", () => {
       draggingId = null;
       card.classList.remove("is-dragging");
-      listEl.querySelectorAll(".workout-card").forEach((el) => el.classList.remove("drag-over"));
+      listEl.querySelectorAll(".routine-card").forEach((el) => el.classList.remove("drag-over"));
     });
 
     card.addEventListener("dragover", (e) => {
