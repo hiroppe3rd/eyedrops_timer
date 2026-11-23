@@ -28,7 +28,7 @@ export const MEDICATION_TEMPLATES = [
     name: "レポフロキサシン",
     note: "術前・術後 1日4回",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
@@ -39,7 +39,7 @@ export const MEDICATION_TEMPLATES = [
     name: "プロムフェナクNa",
     note: "術前・術後 1日2回",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
@@ -50,7 +50,7 @@ export const MEDICATION_TEMPLATES = [
     name: "サンベタゾン",
     note: "術後 1日4回",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
@@ -61,7 +61,7 @@ export const MEDICATION_TEMPLATES = [
     name: "ミドリンＰ",
     note: "手術直前",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
+      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
