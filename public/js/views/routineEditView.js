@@ -321,20 +321,30 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
           return;
         }
 
-        // 削除アニメーション完了後に配列から除外して再描画
+        // 枠を上下に縮小して消した後に配列から除外して再描画
         isRemoving = true;
         let done = false;
+        const onTransitionEnd = (e) => {
+          if (e.target === card && e.propertyName === "height") {
+            finishRemove();
+          }
+        };
         const finishRemove = () => {
           if (done) return;
           done = true;
+          card.removeEventListener("transitionend", onTransitionEnd);
           performRemove();
         };
 
-        card.style.maxHeight = `${card.offsetHeight}px`;
-        void card.offsetHeight;
+        card.style.height = `${card.offsetHeight}px`;
         card.classList.add("med-card-removing");
-        card.addEventListener("animationend", finishRemove, { once: true });
-        setTimeout(finishRemove, 350);
+        void card.offsetHeight;
+        requestAnimationFrame(() => {
+          card.classList.add("is-collapsing");
+          card.style.height = "0px";
+        });
+        card.addEventListener("transitionend", onTransitionEnd);
+        setTimeout(finishRemove, 600);
       });
     });
 

@@ -374,26 +374,6 @@ body {
   }
 }
 
-@keyframes med-card-remove {
-  0% {
-    opacity: 1;
-    transform: translateX(0) scale(1);
-  }
-  45% {
-    opacity: 0;
-    transform: translateX(24px) scale(0.97);
-  }
-  100% {
-    opacity: 0;
-    transform: translateX(24px) scale(0.97);
-    max-height: 0;
-    margin-bottom: 0;
-    padding-top: 0;
-    padding-bottom: 0;
-    border-width: 0;
-  }
-}
-
 .med-card-enter {
   animation: med-card-enter 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
@@ -410,17 +390,34 @@ body {
   overflow: hidden;
   pointer-events: none;
   border-color: var(--danger-border);
-  animation: med-card-remove 0.28s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  transition:
+    height 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-top 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    padding-bottom 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    margin-bottom 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    border-top-width 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    border-bottom-width 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease 0.16s;
+}
+
+.med-card-removing.is-collapsing {
+  opacity: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  margin-bottom: 0;
+  border-top-width: 0;
+  border-bottom-width: 0;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .med-card {
+  .med-card,
+  .med-card-removing {
     transition-duration: 0.01ms !important;
+    transition-delay: 0ms !important;
   }
   .med-card-enter,
   .med-card-duplicate,
-  .med-card-moved,
-  .med-card-removing {
+  .med-card-moved {
     animation-duration: 0.01ms !important;
   }
 }
