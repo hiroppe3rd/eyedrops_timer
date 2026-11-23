@@ -19,6 +19,7 @@
 ## 起動方法・テスト
 
 - **ローカル開発起動**: `docker compose up -d` を実行後、`http://localhost:8080` にアクセス
+- **Apache2 エイリアス公開 (`/eyedrops/`)**: Linux (Apache2) 環境で `sudo bash scripts/setup-apache2.sh` を実行
 - **自動検証テスト**: `node tests/run_tests.mjs`
 - **Googleカレンダー連携設定**: [設定手順書](docs/google_calendar_setup.md) に沿って取得したクライアント ID を `public/js/config.js` に設定してください。
 
