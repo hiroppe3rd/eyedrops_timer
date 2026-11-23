@@ -21,7 +21,7 @@
 - **ローカル開発起動**: `docker compose up -d` を実行後、`http://localhost:8080` にアクセス
 - **Apache2 エイリアス公開 (`/eyedrops/`)**: Linux (Apache2) 環境で `sudo bash scripts/setup-apache2.sh` を実行
 - **自動検証テスト**: `node tests/run_tests.mjs`
-- **Googleカレンダー連携設定**: [設定手順書](docs/google_calendar_setup.md) に沿って取得したクライアント ID を `public/js/config.js` に設定してください。
+- **Googleカレンダー連携**: 完了画面のボタンから入力済みの Google カレンダー予定作成画面を別タブで開きます（Google Cloud での OAuth 設定やドメイン取得は不要です）。
 
 ## 計画
 

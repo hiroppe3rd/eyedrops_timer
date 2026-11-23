@@ -7,12 +7,6 @@ export function renderRoutineListView(container, state, actions) {
   const sorted = [...routines].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   const unsavedList = (pendingResults || []).filter((r) => r.calendarStatus !== "saved");
   const isExpanded = Boolean(state.pendingExpanded);
-  const batchStatus = state.pendingBatchStatus || { isSaving: false, progressText: "", errorMessage: "" };
-  const retryAllLabel = batchStatus.isSaving
-    ? batchStatus.progressText || "保存中..."
-    : unsavedList.length === 1
-      ? "再試行"
-      : "まとめて再試行";
 
   const pendingDetailsHtml = isExpanded
     ? `
@@ -28,8 +22,8 @@ export function renderRoutineListView(container, state, actions) {
                   </div>
                 </div>
                 <div class="pending-item-actions">
-                  <button type="button" class="btn btn-primary btn-sm" data-pending-action="retry" data-execution-id="${escapeHtml(item.executionId)}" ${batchStatus.isSaving ? "disabled" : ""}>再試行</button>
-                  <button type="button" class="btn btn-danger btn-sm" data-pending-action="delete" data-execution-id="${escapeHtml(item.executionId)}" ${batchStatus.isSaving ? "disabled" : ""}>削除</button>
+                  <button type="button" class="btn btn-primary btn-sm" data-pending-action="retry" data-execution-id="${escapeHtml(item.executionId)}">開く</button>
+                  <button type="button" class="btn btn-danger btn-sm" data-pending-action="delete" data-execution-id="${escapeHtml(item.executionId)}">削除</button>
                 </div>
               </li>
             `
@@ -39,24 +33,18 @@ export function renderRoutineListView(container, state, actions) {
     `
     : "";
 
-  const pendingErrorHtml = batchStatus.errorMessage
-    ? `<div class="pending-batch-error" role="alert">${escapeHtml(batchStatus.errorMessage)}</div>`
-    : "";
-
   const pendingBannerHtml = unsavedList.length
     ? `
       <div class="alert-banner warn pending-banner" role="status">
         <div class="pending-banner-header">
           <div>
-            <strong>未保存の完了履歴が ${unsavedList.length} 件あります</strong>
+            <strong>未登録の完了履歴が ${unsavedList.length} 件あります</strong>
             ${!isExpanded ? `<div class="muted-text">${escapeHtml(unsavedList[0].routineName)}${unsavedList.length > 1 ? " ほか" : ""}</div>` : ""}
           </div>
           <div class="pending-banner-actions">
             <button type="button" class="btn btn-secondary btn-sm" id="btn-toggle-pending-details" aria-expanded="${isExpanded ? "true" : "false"}">${isExpanded ? "閉じる" : "詳細"}</button>
-            <button type="button" class="btn btn-warn btn-sm" id="btn-retry-all-pending" ${batchStatus.isSaving ? "disabled" : ""}>${escapeHtml(retryAllLabel)}</button>
           </div>
         </div>
-        ${pendingErrorHtml}
         ${pendingDetailsHtml}
       </div>
     `
@@ -106,12 +94,9 @@ export function renderRoutineListView(container, state, actions) {
     actions.onCreate();
   });
 
-  // 未保存履歴バナー操作（詳細トグル・まとめて再試行）
+  // 未保存履歴バナー操作（詳細トグル）
   container.querySelector("#btn-toggle-pending-details")?.addEventListener("click", () => {
     actions.onTogglePendingDetails();
-  });
-  container.querySelector("#btn-retry-all-pending")?.addEventListener("click", () => {
-    actions.onRetryAllPending();
   });
 
   // 未保存履歴の個別操作（再試行・削除）

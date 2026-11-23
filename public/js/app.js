@@ -5,7 +5,6 @@ import {
   formatDateTime,
   removePendingResult,
 } from "./models.js";
-import { savePendingResultsToGoogleCalendar } from "./calendar.js";
 import { loadAppData, saveAppData } from "./storage.js";
 import {
   SpeechGuideController,
@@ -30,7 +29,6 @@ const appState = {
   selectedRoutineId: null,
   latestResult: null,
   pendingExpanded: false,
-  pendingBatchStatus: { isSaving: false, progressText: "", errorMessage: "" },
   cleanupCurrentView: null,
 };
 
@@ -82,68 +80,12 @@ function render() {
         render();
       },
       onRetryPending: (pendingResult) => {
-        appState.pendingBatchStatus = { isSaving: false, progressText: "", errorMessage: "" };
         appState.latestResult = pendingResult;
         appState.currentScreen = "SCR-05";
         render();
       },
       onTogglePendingDetails: () => {
         appState.pendingExpanded = !appState.pendingExpanded;
-        render();
-      },
-      onRetryAllPending: async () => {
-        if (appState.pendingBatchStatus.isSaving) return;
-        const unsaved = (appState.data.pendingResults || []).filter(
-          (r) => r.calendarStatus !== "saved"
-        );
-        if (unsaved.length === 0) return;
-
-        appState.pendingBatchStatus = {
-          isSaving: true,
-          progressText: "認証中...",
-          errorMessage: "",
-        };
-        render();
-
-        try {
-          const { failedError } = await savePendingResultsToGoogleCalendar(unsaved, {
-            onProgress: (current, total) => {
-              appState.pendingBatchStatus = {
-                isSaving: true,
-                progressText: `保存中... (${current}/${total})`,
-                errorMessage: "",
-              };
-              render();
-            },
-            onItemSaved: (savedItem) => {
-              appState.data.pendingResults = removePendingResult(
-                appState.data.pendingResults,
-                savedItem.executionId
-              );
-              saveAppData(appState.data);
-            },
-          });
-
-          const remaining = (appState.data.pendingResults || []).filter(
-            (r) => r.calendarStatus !== "saved"
-          );
-          if (remaining.length === 0) {
-            appState.pendingExpanded = false;
-          }
-          appState.pendingBatchStatus = {
-            isSaving: false,
-            progressText: "",
-            errorMessage: failedError
-              ? failedError.message || "一部の履歴の保存に失敗しました。"
-              : "",
-          };
-        } catch (err) {
-          appState.pendingBatchStatus = {
-            isSaving: false,
-            progressText: "",
-            errorMessage: err?.message || "Googleカレンダーへの保存に失敗しました。",
-          };
-        }
         render();
       },
       onDeletePending: (pendingResult) => {

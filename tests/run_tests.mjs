@@ -27,12 +27,10 @@ import {
   resolvePreferredVoice,
 } from "../public/js/speech.js";
 import {
-  buildCalendarEventPayload,
-  isClientIdConfigured,
-  savePendingResultsToGoogleCalendar,
-  saveRoutineToGoogleCalendar,
+  buildGoogleCalendarTemplateUrl,
+  formatGoogleCalendarDate,
+  openGoogleCalendarTemplate,
 } from "../public/js/calendar.js";
-import { CONFIG } from "../public/js/config.js";
 
 let passed = 0;
 async function test(name, fn) {
@@ -251,101 +249,39 @@ await test("Google 日本語優先選択と点眼ガイド文生成", () => {
   assert.equal(buildStepCompleteSpeech({ label: "準備" }), "準備、完了。");
 });
 
-// 6. calendar.js の認証拒否・通信失敗・再試行成功検証
-await test("Googleカレンダー連携: 認証拒否・通信失敗・再試行成功", async () => {
-  const origClientId = CONFIG.GOOGLE_CLIENT_ID;
-  CONFIG.GOOGLE_CLIENT_ID = "test-client-id.apps.googleusercontent.com";
+// 6. calendar.js の予定作成URL生成・別タブ遷移検証
+await test("Googleカレンダー連携: 予定作成URL生成と別タブオープン", () => {
+  assert.equal(formatGoogleCalendarDate("2026-11-22T08:00:00.000Z"), "20261122T080000Z");
+  assert.equal(formatGoogleCalendarDate("invalid-date"), "");
+  assert.equal(formatGoogleCalendarDate(""), "");
 
   const sampleResult = {
     routineName: "朝の点眼",
     startedAt: "2026-11-22T08:00:00.000Z",
     completedAt: "2026-11-22T08:05:00.000Z",
   };
-  assert.equal(isClientIdConfigured(), true);
-  assert.equal(buildCalendarEventPayload(sampleResult).summary, "朝の点眼");
+  const urlString = buildGoogleCalendarTemplateUrl(sampleResult);
+  const parsed = new URL(urlString);
+  assert.equal(parsed.origin + parsed.pathname, "https://calendar.google.com/calendar/render");
+  assert.equal(parsed.searchParams.get("action"), "TEMPLATE");
+  assert.equal(parsed.searchParams.get("text"), "朝の点眼");
+  assert.equal(parsed.searchParams.get("dates"), "20261122T080000Z/20261122T080500Z");
+  assert.equal(parsed.searchParams.get("details"), "点眼タイマーで完了したルーティン記録");
 
-  let mockAuthBehavior = "deny";
+  // window.open が正しい引数で呼ばれること
+  let openedArgs = null;
   globalThis.window = {
-    google: {
-      accounts: {
-        oauth2: {
-          initTokenClient: ({ callback }) => ({
-            requestAccessToken: () => {
-              if (mockAuthBehavior === "deny") {
-                callback({ error: "access_denied" });
-              } else {
-                callback({ access_token: "mock-token" });
-              }
-            },
-          }),
-        },
-      },
+    open: (url, target, features) => {
+      openedArgs = { url, target, features };
     },
   };
-
-  try {
-    // 認証拒否
-    await assert.rejects(
-      () => saveRoutineToGoogleCalendar(sampleResult),
-      /認証・権限付与が拒否/
-    );
-
-    // 認証成功・通信失敗
-    mockAuthBehavior = "ok";
-    globalThis.fetch = async () => {
-      throw new Error("Network down");
-    };
-    await assert.rejects(
-      () => saveRoutineToGoogleCalendar(sampleResult),
-      /通信エラーが発生しました/
-    );
-
-    // 再試行で成功
-    globalThis.fetch = async (url, opts) => {
-      assert.ok(url.endsWith("/calendars/primary/events"));
-      assert.equal(opts.method, "POST");
-      return {
-        ok: true,
-        json: async () => ({ id: "evt_1", htmlLink: "https://calendar.google.com/event?eid=1" }),
-      };
-    };
-    const created = await saveRoutineToGoogleCalendar(sampleResult);
-    assert.equal(created.id, "evt_1");
-
-    // まとめて再試行: 1回認証で部分成功・全件成功を検証
-    let authCalls = 0;
-    globalThis.window.google.accounts.oauth2.initTokenClient = ({ callback }) => ({
-      requestAccessToken: () => {
-        authCalls += 1;
-        callback({ access_token: "batch-token" });
-      },
-    });
-    let fetchCount = 0;
-    globalThis.fetch = async () => {
-      fetchCount += 1;
-      if (fetchCount === 2) {
-        throw new Error("Network down");
-      }
-      return {
-        ok: true,
-        json: async () => ({ id: `evt_${fetchCount}` }),
-      };
-    };
-    const batchItems = [
-      { ...sampleResult, executionId: "ex_a" },
-      { ...sampleResult, executionId: "ex_b" },
-    ];
-    const savedIds = [];
-    const partial = await savePendingResultsToGoogleCalendar(batchItems, {
-      onItemSaved: (item) => savedIds.push(item.executionId),
-    });
-    assert.equal(authCalls, 1);
-    assert.deepEqual(savedIds, ["ex_a"]);
-    assert.deepEqual(partial.succeededIds, ["ex_a"]);
-    assert.match(partial.failedError?.message || "", /通信エラー/);
-  } finally {
-    CONFIG.GOOGLE_CLIENT_ID = origClientId;
-  }
+  const returnedUrl = openGoogleCalendarTemplate(sampleResult);
+  assert.equal(returnedUrl, urlString);
+  assert.deepEqual(openedArgs, {
+    url: urlString,
+    target: "_blank",
+    features: "noopener,noreferrer",
+  });
 });
 
 // 7. 行程の複製・テンプレート・既存抽出・備考（非読み上げ）の検証
