@@ -37,7 +37,13 @@ function main() {
   }
 
   // 環境変数を優先し、未設定時は .env の値を使用
-  const clientId = (process.env.GOOGLE_CLIENT_ID ?? fileEnv.GOOGLE_CLIENT_ID ?? "").trim();
+  const rawClientId =
+    typeof process.env.GOOGLE_CLIENT_ID === "string"
+      ? process.env.GOOGLE_CLIENT_ID
+      : typeof fileEnv.GOOGLE_CLIENT_ID === "string"
+        ? fileEnv.GOOGLE_CLIENT_ID
+        : "";
+  const clientId = rawClientId.trim();
 
   const output = [
     "// .env から自動生成される環境設定（手動編集不要）",
