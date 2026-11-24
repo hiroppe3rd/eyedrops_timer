@@ -1,8 +1,9 @@
 # Apache ベースの本番用イメージ
 FROM httpd:2.4-alpine
 
-# Web App Manifest の MIME タイプを追加
-RUN echo 'AddType application/manifest+json .webmanifest' >> /usr/local/apache2/conf/httpd.conf
+# Web App Manifest の MIME タイプとキャッシュ制御（新旧ファイル不整合防止）を追加
+RUN sed -i 's/#LoadModule headers_module/LoadModule headers_module/' /usr/local/apache2/conf/httpd.conf \
+  && printf '\nAddType application/manifest+json .webmanifest\n<FilesMatch "\\.(html|js|css|webmanifest)$">\n  Header set Cache-Control "no-cache"\n</FilesMatch>\n' >> /usr/local/apache2/conf/httpd.conf
 
 # 公開ファイルをドキュメントルートへ配置
 COPY public/ /usr/local/apache2/htdocs/
