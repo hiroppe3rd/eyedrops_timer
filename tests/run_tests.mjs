@@ -86,7 +86,7 @@ await test("時間テンプレート11種・手入力換算・バリデーショ
     name: "抗菌目薬",
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "瞑想", durationSec: 60 },
+      { type: STEP_TYPES.MEDITATION, label: "閉眼", durationSec: 60 },
       { type: STEP_TYPES.WAIT, label: "待機", durationSec: 300 },
     ],
   });
@@ -180,7 +180,7 @@ await test("タイマーの実行・5秒未満カウントダウン・背景補�
           name: "薬A",
           steps: [
             { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 3 },
-            { type: STEP_TYPES.MEDITATION, label: "瞑想", durationSec: 0 },
+            { type: STEP_TYPES.MEDITATION, label: "閉眼", durationSec: 0 },
             { type: STEP_TYPES.WAIT, label: "待機", durationSec: 10 },
           ],
         },
@@ -188,7 +188,7 @@ await test("タイマーの実行・5秒未満カウントダウン・背景補�
           name: "薬B",
           steps: [
             { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 5 },
-            { type: STEP_TYPES.MEDITATION, label: "瞑想", durationSec: 6 },
+            { type: STEP_TYPES.MEDITATION, label: "閉眼", durationSec: 6 },
             { type: STEP_TYPES.WAIT, label: "待機", durationSec: 300 },
           ],
         },
@@ -252,10 +252,10 @@ await test("Google 日本語優先選択と点眼ガイド文生成", () => {
   assert.equal(resolvePreferredVoice(voices, "存在しない音声").name, "Google 日本語");
 
   const startTxt = buildStepStartSpeech(
-    { medIndex: 0, medName: "ヒアルロン酸", type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 60 },
+    { medIndex: 0, medName: "ヒアルロン酸", type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
     { medIndex: 0, type: STEP_TYPES.PREPARE }
   );
-  assert.equal(startTxt, "ヒアルロン酸 を点眼してください。続けて、直後の瞑想、1分、開始。");
+  assert.equal(startTxt, "ヒアルロン酸 を点眼してください。続けて、直後の閉眼、1分、開始。");
   assert.equal(buildStepCompleteSpeech({ label: "準備" }), "準備、完了。");
 });
 
@@ -315,7 +315,7 @@ await test("行程テンプレート・既存抽出・複製・備考の保持�
           note: "1回1滴",
           steps: [
             { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
-            { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 60 },
+            { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
             { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 300 },
           ],
         },
@@ -332,7 +332,7 @@ await test("行程テンプレート・既存抽出・複製・備考の保持�
           note: "1回1滴",
           steps: [
             { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
-            { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 60 },
+            { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
             { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 300 },
           ],
         },

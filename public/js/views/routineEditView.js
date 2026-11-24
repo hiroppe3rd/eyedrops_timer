@@ -394,7 +394,7 @@ function captureCardRects(listEl) {
 /** 工程種別の表示ラベル */
 function getStepTypeTitle(type) {
   if (type === STEP_TYPES.PREPARE) return "準備";
-  if (type === STEP_TYPES.MEDITATION) return "直後の瞑想";
+  if (type === STEP_TYPES.MEDITATION) return "直後の閉眼";
   if (type === STEP_TYPES.WAIT) return "次の点眼までの待機";
   return "工程";
 }

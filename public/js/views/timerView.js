@@ -103,7 +103,7 @@ export function renderTimerView(container, routine, actions) {
 
   const updateGuideBanner = (step) => {
     if (!guideBannerEl) return;
-    // 準備の直後（直後の瞑想開始時）に点眼実施ガイドを表示
+    // 準備の直後（直後の閉眼開始時）に点眼実施ガイドを表示
     if (
       step.type === STEP_TYPES.MEDITATION &&
       previousStep &&

@@ -461,7 +461,7 @@
             <tr>
               <td><code>SCR-02</code></td>
               <td>ルーティン作成・編集画面</td>
-              <td>ルーティン名、点眼薬の追加・削除・並替、各工程（準備／直後の瞑想／次の点眼までの待機）の表示名と秒数設定、入力検証。</td>
+              <td>ルーティン名、点眼薬の追加・削除・並替、各工程（準備／直後の閉眼／次の点眼までの待機）の表示名と秒数設定、入力検証。</td>
             </tr>
             <tr>
               <td><code>SCR-03</code></td>
@@ -596,7 +596,7 @@
                 <div class="wf-input" style="flex:1; margin:0;">手を洗い準備</div>
                 <span class="wf-btn">20秒</span>
               </div>
-              <small>直後の瞑想（表示名 ＋ 時間ボタン）</small>
+              <small>直後の閉眼（表示名 ＋ 時間ボタン）</small>
               <div style="display:flex; gap:6px; align-items:center; margin:4px 0 8px;">
                 <div class="wf-input" style="flex:1; margin:0;">目を閉じて待機</div>
                 <span class="wf-btn">1分</span>
@@ -613,8 +613,8 @@
                 <strong>☰ 薬2: 抗菌目薬（最後）</strong>
                 <span class="wf-btn danger">薬削除</span>
               </div>
-              <small>準備 / 直後の瞑想</small>
-              <div class="wf-input">準備 10秒 ／ 瞑想 60秒</div>
+              <small>準備 / 直後の閉眼</small>
+              <div class="wf-input">準備 10秒 ／ 閉眼 60秒</div>
               <small style="color:#64748b;">※ 最後の薬には待機工程を設けません</small>
             </div>
             <span class="wf-btn">＋ 点眼薬を追加</span>
@@ -671,7 +671,7 @@
                 </tr>
                 <tr>
                   <td>各工程</td>
-                  <td>「準備」「直後の瞑想」「次の点眼までの待機」を設定。表示名は必須。<br>時間は表示名の右にボタン表示（例：<code>20秒</code>、<code>5分</code>）し、ボタン押下で<strong>時間設定ダイアログ</strong>を開く。ダイアログ内で<strong>テンプレートボタン選択</strong>（<code>5秒</code>, <code>10秒</code>, <code>15秒</code>, <code>30秒</code>, <code>1分</code>, <code>1.5分</code>, <code>2分</code>, <code>3分</code>, <code>4分</code>, <code>5分</code>, <code>10分</code>）または<strong>数値手入力</strong>（数値＋<code>秒 / 分</code> 単位切替）を行い反映する。内部保存は秒換算（<code>0</code> 秒以上の整数、<code>0</code> 秒は省略扱い、負数や不正値はエラー）。</td>
+                  <td>「準備」「直後の閉眼」「次の点眼までの待機」を設定。表示名は必須。<br>時間は表示名の右にボタン表示（例：<code>20秒</code>、<code>5分</code>）し、ボタン押下で<strong>時間設定ダイアログ</strong>を開く。ダイアログ内で<strong>テンプレートボタン選択</strong>（<code>5秒</code>, <code>10秒</code>, <code>15秒</code>, <code>30秒</code>, <code>1分</code>, <code>1.5分</code>, <code>2分</code>, <code>3分</code>, <code>4分</code>, <code>5分</code>, <code>10分</code>）または<strong>数値手入力</strong>（数値＋<code>秒 / 分</code> 単位切替）を行い反映する。内部保存は秒換算（<code>0</code> 秒以上の整数、<code>0</code> 秒は省略扱い、負数や不正値はエラー）。</td>
                 </tr>
                 <tr>
                   <td>最後の点眼薬ルール</td>
@@ -695,8 +695,8 @@
             </div>
             <div class="wf-card">
               <strong>朝の点眼セット</strong><br>
-              <small>1. ヒアルロン酸（準備20秒 → 点眼 → 瞑想60秒 → 待機300秒）</small><br>
-              <small>2. 抗菌目薬（準備10秒 → 点眼 → 瞑想60秒）</small>
+              <small>1. ヒアルロン酸（準備20秒 → 点眼 → 閉眼60秒 → 待機300秒）</small><br>
+              <small>2. 抗菌目薬（準備10秒 → 点眼 → 閉眼60秒）</small>
             </div>
             <div class="wf-card">
               <strong>音声ガイド設定</strong><br>
@@ -797,7 +797,7 @@
                 </tr>
                 <tr>
                   <td>準備完了 → 点眼実施</td>
-                  <td>「準備」工程の終了時、薬名と点眼実施をガイドする（例：「準備完了。ヒアルロン酸を点眼してください」）。その後「直後の瞑想」工程へ進む。</td>
+                  <td>「準備」工程の終了時、薬名と点眼実施をガイドする（例：「準備完了。ヒアルロン酸を点眼してください」）。その後「直後の閉眼」工程へ進む。</td>
                 </tr>
                 <tr>
                   <td>カウントダウン（5秒前）</td>

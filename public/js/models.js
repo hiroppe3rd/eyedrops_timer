@@ -29,7 +29,7 @@ export const MEDICATION_TEMPLATES = [
     note: "術前・術後 1日4回",
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
   },
@@ -40,7 +40,7 @@ export const MEDICATION_TEMPLATES = [
     note: "術前・術後 1日2回",
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
   },
@@ -51,7 +51,7 @@ export const MEDICATION_TEMPLATES = [
     note: "術後 1日4回",
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
   },
@@ -62,7 +62,7 @@ export const MEDICATION_TEMPLATES = [
     note: "手術直前",
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 120 },
+      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
       { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
     ],
   },
@@ -80,7 +80,7 @@ export function createId(prefix) {
 export function createDefaultMedication(isLast = false) {
   const steps = [
     { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
-    { type: STEP_TYPES.MEDITATION, label: "直後の瞑想", durationSec: 60 },
+    { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
   ];
   if (!isLast) {
     steps.push({ type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 300 });
@@ -143,7 +143,7 @@ export function normalizeRoutineSteps(medications) {
     };
     const meditation = med.steps.find((s) => s.type === STEP_TYPES.MEDITATION) || {
       type: STEP_TYPES.MEDITATION,
-      label: "直後の瞑想",
+      label: "直後の閉眼",
       durationSec: 60,
     };
     const steps = [{ ...prepare }, { ...meditation }];
@@ -251,7 +251,7 @@ export function cloneMedicationForAdd(source) {
   };
   const meditation = srcSteps.find((s) => s.type === STEP_TYPES.MEDITATION) || {
     type: STEP_TYPES.MEDITATION,
-    label: "直後の瞑想",
+    label: "直後の閉眼",
     durationSec: 60,
   };
   const wait = srcSteps.find((s) => s.type === STEP_TYPES.WAIT) || {
