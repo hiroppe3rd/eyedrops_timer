@@ -45,12 +45,35 @@ body {
   padding: 12px 20px;
 }
 
-.brand {
+.app-header-inner {
   max-width: 720px;
   margin: 0 auto;
   display: flex;
   align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
   gap: 10px;
+  min-width: 0;
+}
+
+.btn-install-app {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #f0f9ff;
+  flex-shrink: 0;
+}
+
+.btn-install-app:hover {
+  background: #e0f2fe;
+}
+
+[hidden] {
+  display: none !important;
 }
 
 .brand-logo {
@@ -865,4 +888,13 @@ body {
   padding: 24px 12px;
   color: var(--text-muted);
   font-size: 0.9rem;
+}
+
+.ios-install-steps {
+  margin: 12px 0 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 0.92rem;
 }

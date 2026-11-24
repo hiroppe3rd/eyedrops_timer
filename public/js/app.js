@@ -16,6 +16,7 @@ import { renderRoutineEditView } from "./views/routineEditView.js";
 import { renderConfirmView } from "./views/confirmView.js";
 import { renderTimerView } from "./views/timerView.js";
 import { renderCompleteView } from "./views/completeView.js";
+import { initPwaInstall } from "./pwaInstall.js";
 
 const appContainer = document.getElementById("app");
 const initialData = loadAppData();
@@ -259,5 +260,6 @@ function render() {
 
 // 初期描画
 document.addEventListener("DOMContentLoaded", () => {
+  initPwaInstall();
   render();
 });

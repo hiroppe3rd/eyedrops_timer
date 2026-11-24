@@ -31,6 +31,11 @@ import {
   formatGoogleCalendarDate,
   openGoogleCalendarTemplate,
 } from "../public/js/calendar.js";
+import {
+  isIosSafariUserAgent,
+  isStandaloneDisplayMode,
+  shouldShowInstallButton,
+} from "../public/js/pwaInstall.js";
 
 let passed = 0;
 async function test(name, fn) {
@@ -339,6 +344,101 @@ await test("行程テンプレート・既存抽出・複製・備考の保持�
   assert.equal(queue[0].medNote, "1回1滴");
   const speechText = buildStepStartSpeech(queue[0]);
   assert.ok(!speechText.includes("1回1滴"));
+});
+
+// 8. pwaInstall.js の検証
+await test("PWAアプリ登録ボタンの表示・アプリ起動時非表示の判定", () => {
+  // スタンドアロン表示判定
+  assert.equal(
+    isStandaloneDisplayMode(
+      { navigator: { standalone: true }, matchMedia: () => ({ matches: false }) },
+      { referrer: "" }
+    ),
+    true
+  );
+  assert.equal(
+    isStandaloneDisplayMode(
+      {
+        navigator: { standalone: false },
+        matchMedia: (q) => ({ matches: q === "(display-mode: standalone)" }),
+      },
+      { referrer: "" }
+    ),
+    true
+  );
+  assert.equal(
+    isStandaloneDisplayMode(
+      { navigator: { standalone: false }, matchMedia: () => ({ matches: false }) },
+      { referrer: "android-app://com.example" }
+    ),
+    true
+  );
+  assert.equal(
+    isStandaloneDisplayMode(
+      { navigator: { standalone: false }, matchMedia: () => ({ matches: false }) },
+      { referrer: "https://example.com" }
+    ),
+    false
+  );
+
+  // iOS Safari 判定
+  const iphoneSafariUa =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1";
+  const iphoneChromeUa =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) CriOS/130.0.0.0 Mobile/15E148 Safari/604.1";
+  assert.equal(isIosSafariUserAgent(iphoneSafariUa, 5), true);
+  assert.equal(isIosSafariUserAgent(iphoneChromeUa, 5), false);
+  assert.equal(isIosSafariUserAgent("Mozilla/5.0 (Windows NT 10.0)", 0), false);
+
+  // ボタン表示制御
+  assert.equal(
+    shouldShowInstallButton({
+      isStandalone: false,
+      hasDeferredPrompt: true,
+      isIosSafari: false,
+      isInstalled: false,
+    }),
+    true
+  );
+  assert.equal(
+    shouldShowInstallButton({
+      isStandalone: false,
+      hasDeferredPrompt: false,
+      isIosSafari: true,
+      isInstalled: false,
+    }),
+    true
+  );
+  // アプリ起動時（standalone）は非表示
+  assert.equal(
+    shouldShowInstallButton({
+      isStandalone: true,
+      hasDeferredPrompt: true,
+      isIosSafari: true,
+      isInstalled: false,
+    }),
+    false
+  );
+  // インストール完了後は非表示
+  assert.equal(
+    shouldShowInstallButton({
+      isStandalone: false,
+      hasDeferredPrompt: true,
+      isIosSafari: false,
+      isInstalled: true,
+    }),
+    false
+  );
+  // 非対応・イベント未発火時は非表示
+  assert.equal(
+    shouldShowInstallButton({
+      isStandalone: false,
+      hasDeferredPrompt: false,
+      isIosSafari: false,
+      isInstalled: false,
+    }),
+    false
+  );
 });
 
 console.log(`\n全 ${passed} 件の検証テストが合格しました。`);
