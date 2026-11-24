@@ -8,6 +8,7 @@ import {
   DURATION_TEMPLATES,
   MEDICATION_TEMPLATES,
   STEP_TYPES,
+  appendMedicationsRemovingEmpty,
   calcRoutineTotalSeconds,
   cloneMedicationForAdd,
   createDefaultRoutine,
@@ -344,6 +345,27 @@ await test("行程テンプレート・既存抽出・複製・備考の保持�
   assert.equal(queue[0].medNote, "1回1滴");
   const speechText = buildStepStartSpeech(queue[0]);
   assert.ok(!speechText.includes("1回1滴"));
+
+  // テンプレート・既存追加時に薬名が空の行程を除外すること
+  const initialRt = createDefaultRoutine();
+  const addedTpl = cloneMedicationForAdd(MEDICATION_TEMPLATES[0]);
+  const afterNewAdd = appendMedicationsRemovingEmpty(initialRt.medications, [addedTpl]);
+  assert.equal(afterNewAdd.length, 1);
+  assert.equal(afterNewAdd[0].name, MEDICATION_TEMPLATES[0].name);
+  assert.equal(afterNewAdd[0].steps.length, 2);
+
+  // 入力済みと空の行程が混在する編集時は空のみ除外して追加されること
+  const mixedCurrent = [
+    { id: "m_ok", name: "ヒアルロン酸", note: "", steps: [] },
+    { id: "m_blank", name: "   ", note: "", steps: [] },
+  ];
+  const addedTpl2 = cloneMedicationForAdd(MEDICATION_TEMPLATES[1]);
+  const afterEditAdd = appendMedicationsRemovingEmpty(mixedCurrent, [addedTpl2]);
+  assert.equal(afterEditAdd.length, 2);
+  assert.equal(afterEditAdd[0].name, "ヒアルロン酸");
+  assert.equal(afterEditAdd[0].steps.length, 3);
+  assert.equal(afterEditAdd[1].name, MEDICATION_TEMPLATES[1].name);
+  assert.equal(afterEditAdd[1].steps.length, 2);
 });
 
 // 8. pwaInstall.js の検証

@@ -3,6 +3,7 @@ import {
   DURATION_TEMPLATES,
   MEDICATION_TEMPLATES,
   STEP_TYPES,
+  appendMedicationsRemovingEmpty,
   cloneMedicationForAdd,
   createDefaultMedication,
   createId,
@@ -275,8 +276,7 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
       openMedicationPickerDialog(existingRoutines, (selectedItems) => {
         if (!selectedItems.length) return;
         const added = selectedItems.map((item) => cloneMedicationForAdd(item));
-        draft.medications.push(...added);
-        draft.medications = normalizeRoutineSteps(draft.medications);
+        draft.medications = appendMedicationsRemovingEmpty(draft.medications, added);
         pendingEffect = { type: "enter", ids: added.map((m) => m.id) };
         renderForm();
       });

@@ -267,6 +267,19 @@ export function cloneMedicationForAdd(source) {
   };
 }
 
+/** 薬名が空の既存行程を除外して新しい行程を追加・正規化 */
+export function appendMedicationsRemovingEmpty(currentMedications, addedMedications) {
+  const current = Array.isArray(currentMedications) ? currentMedications : [];
+  const added = Array.isArray(addedMedications) ? addedMedications : [];
+  if (added.length === 0) {
+    return normalizeRoutineSteps(current);
+  }
+  const nonEmptyCurrent = current.filter(
+    (med) => typeof med?.name === "string" && med.name.trim() !== ""
+  );
+  return normalizeRoutineSteps([...nonEmptyCurrent, ...added]);
+}
+
 /** 保存済みルーティン群から既存の点眼薬行程を重複整理して抽出 */
 export function extractExistingMedications(routines) {
   if (!Array.isArray(routines)) return [];
