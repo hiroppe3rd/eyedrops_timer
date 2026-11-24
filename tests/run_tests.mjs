@@ -28,10 +28,14 @@ import {
   resolvePreferredVoice,
 } from "../public/js/speech.js";
 import {
+  buildGoogleCalendarEventPayload,
   buildGoogleCalendarTemplateUrl,
   formatGoogleCalendarDate,
   openGoogleCalendarTemplate,
+  saveResultToGoogleCalendar,
 } from "../public/js/calendar.js";
+import { getRuntimeConfig } from "../public/js/config.js";
+import { parseEnvContent } from "../scripts/generate-config.mjs";
 import {
   isIosSafariUserAgent,
   isStandaloneDisplayMode,
@@ -460,6 +464,82 @@ await test("PWAアプリ登録ボタンの表示・アプリ起動時非表示�
       isInstalled: false,
     }),
     false
+  );
+});
+
+// 9. .env 設定・Google Calendar API 連携の検証
+await test(".env パースとランタイム設定の取得", () => {
+  const parsed = parseEnvContent(
+    '# コメント\nGOOGLE_CLIENT_ID="12345-abc.apps.googleusercontent.com"\nEMPTY_KEY=\n'
+  );
+  assert.equal(parsed.GOOGLE_CLIENT_ID, "12345-abc.apps.googleusercontent.com");
+  assert.equal(parsed.EMPTY_KEY, "");
+
+  const cfg = getRuntimeConfig({ GOOGLE_CLIENT_ID: "  test-client-id  " });
+  assert.equal(cfg.googleClientId, "test-client-id");
+  assert.equal(getRuntimeConfig(undefined).googleClientId, "");
+});
+
+await test("Google Calendar API: ペイロード生成と登録・エラーハンドリング", async () => {
+  const sampleResult = {
+    executionId: "ex_api_1",
+    routineName: "朝の点眼",
+    startedAt: "2026-11-24T08:00:00.000Z",
+    completedAt: "2026-11-24T08:05:30.000Z",
+  };
+
+  const payload = buildGoogleCalendarEventPayload(sampleResult);
+  assert.equal(payload.summary, "朝の点眼");
+  assert.equal(payload.start.dateTime, "2026-11-24T08:00:00.000Z");
+  assert.equal(payload.end.dateTime, "2026-11-24T08:05:30.000Z");
+
+  // クライアント ID 未設定時はエラー
+  await assert.rejects(
+    () => saveResultToGoogleCalendar(sampleResult, { clientId: "" }),
+    /クライアント ID/
+  );
+
+  // モックを用いた登録成功確認
+  let requestedUrl = "";
+  let requestedInit = null;
+  const saved = await saveResultToGoogleCalendar(sampleResult, {
+    clientId: "mock-client-id",
+    requestToken: async () => "mock-access-token",
+    fetchImpl: async (url, init) => {
+      requestedUrl = url;
+      requestedInit = init;
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          id: "evt_123",
+          htmlLink: "https://calendar.google.com/event?eid=evt_123",
+        }),
+      };
+    },
+  });
+  assert.equal(
+    requestedUrl,
+    "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+  );
+  assert.equal(requestedInit.method, "POST");
+  assert.equal(requestedInit.headers.Authorization, "Bearer mock-access-token");
+  assert.equal(saved.eventId, "evt_123");
+  assert.equal(saved.htmlLink, "https://calendar.google.com/event?eid=evt_123");
+
+  // API エラー時（401）
+  await assert.rejects(
+    () =>
+      saveResultToGoogleCalendar(sampleResult, {
+        clientId: "mock-client-id",
+        requestToken: async () => "expired-token",
+        fetchImpl: async () => ({
+          ok: false,
+          status: 401,
+          json: async () => ({ error: { message: "Invalid Credentials" } }),
+        }),
+      }),
+    /Invalid Credentials/
   );
 });
 

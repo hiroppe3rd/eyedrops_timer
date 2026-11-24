@@ -29,6 +29,19 @@ if ! command -v a2enconf >/dev/null 2>&1 || ! command -v apache2ctl >/dev/null 2
   exit 1
 fi
 
+# .env から公開用 env.js を生成
+ENV_FILE="${REPO_ROOT}/.env"
+if [[ -f "${ENV_FILE}" ]]; then
+  GOOGLE_CLIENT_ID_VAL="$(grep -E '^[[:space:]]*GOOGLE_CLIENT_ID=' "${ENV_FILE}" | tail -n 1 | cut -d'=' -f2- | sed -E 's/^[[:space:]]+//; s/[[:space:]]+$//; s/^["'\'']//; s/["'\'']$//')"
+  cat > "${PUBLIC_DIR}/js/env.js" <<ENVEOF
+// .env から自動生成される環境設定（手動編集不要）
+window.__EYEDROPS_ENV__ = {
+  "GOOGLE_CLIENT_ID": "${GOOGLE_CLIENT_ID_VAL}"
+};
+ENVEOF
+  echo ".env の設定を ${PUBLIC_DIR}/js/env.js に反映しました。"
+fi
+
 # 設定ファイルの作成
 cat > "${CONF_AVAILABLE}" <<EOF
 # 点眼タイマー (/eyedrops/ エイリアス設定)

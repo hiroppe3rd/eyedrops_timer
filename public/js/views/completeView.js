@@ -1,5 +1,9 @@
 // SCR-05: 完了・Googleカレンダー登録画面
-import { buildGoogleCalendarTemplateUrl } from "../calendar.js";
+import {
+  buildGoogleCalendarTemplateUrl,
+  saveResultToGoogleCalendar,
+} from "../calendar.js";
+import { getRuntimeConfig } from "../config.js";
 import { escapeHtml, formatDateTime } from "../models.js";
 
 /** 完了画面の描画とカレンダー遷移制御 */
@@ -19,28 +23,86 @@ export function renderCompleteView(container, result, actions) {
     return;
   }
 
+  const hasClientId = Boolean(getRuntimeConfig().googleClientId);
   let currentStatus = result.calendarStatus || "unsaved";
-  const calendarUrl = result.htmlLink || buildGoogleCalendarTemplateUrl(result);
+  let savedLink = result.htmlLink || "";
+  let errorMessage = "";
+  const templateUrl = buildGoogleCalendarTemplateUrl(result);
 
   const renderContent = () => {
     const isSaved = currentStatus === "saved";
+    const isSaving = currentStatus === "saving";
 
-    const badgeHtml = isSaved
-      ? `<span class="status-badge success">✓ Googleカレンダー作成画面を開きました</span>`
-      : `<span class="status-badge warn">未登録（ブラウザーに一時保存中）</span>`;
+    let badgeHtml = `<span class="status-badge warn">未登録（ブラウザーに一時保存中）</span>`;
+    if (isSaving) {
+      badgeHtml = `<span class="status-badge warn">Googleカレンダーへ記録中...</span>`;
+    } else if (isSaved) {
+      badgeHtml = hasClientId
+        ? `<span class="status-badge success">✓ Googleカレンダーに記録しました</span>`
+        : `<span class="status-badge success">✓ Googleカレンダー作成画面を開きました</span>`;
+    } else if (currentStatus === "error") {
+      badgeHtml = `<span class="status-badge warn">記録失敗（ブラウザーに一時保存中）</span>`;
+    }
 
-    const actionHtml = isSaved
-      ? `<div style="margin-top: 16px; display:flex; flex-direction:column; gap:10px;">
-           <a href="${escapeHtml(calendarUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="width:100%;">もう一度Googleカレンダーを開く</a>
-         </div>`
-      : `<div style="margin-top: 16px;">
-           <a href="${escapeHtml(calendarUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="btn-save-calendar" style="width:100%; padding:12px;">
-             Googleカレンダーに予定を作成
-           </a>
-           <p class="muted-text" style="margin-top:8px; font-size:0.85rem;">
-             別タブでGoogleカレンダーの予定作成画面が開きます。内容を確認して「保存」を押してください。
-           </p>
-         </div>`;
+    const errorHtml = errorMessage
+      ? `<div class="alert-banner error" role="alert" style="margin-top: 12px;">${escapeHtml(errorMessage)}</div>`
+      : "";
+
+    let actionHtml = "";
+    if (isSaved) {
+      const linkUrl = savedLink || templateUrl;
+      const linkLabel = savedLink
+        ? "登録したGoogleカレンダーの予定を開く"
+        : "もう一度Googleカレンダーを開く";
+      actionHtml = `
+        <div style="margin-top: 16px; display:flex; flex-direction:column; gap:10px;">
+          <a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="width:100%;">${linkLabel}</a>
+        </div>
+      `;
+    } else if (hasClientId) {
+      const btnLabel = isSaving
+        ? "記録中..."
+        : currentStatus === "error"
+          ? "Googleカレンダーに記録（再試行）"
+          : "Googleカレンダーに記録";
+      actionHtml = `
+        <div style="margin-top: 16px; display:flex; flex-direction:column; gap:10px;">
+          <button
+            type="button"
+            class="btn btn-primary"
+            id="btn-save-calendar-api"
+            style="width:100%; padding:12px;"
+            ${isSaving ? "disabled" : ""}
+          >
+            ${btnLabel}
+          </button>
+          <a
+            href="${escapeHtml(templateUrl)}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn btn-secondary"
+            id="btn-save-calendar-template"
+            style="width:100%;"
+          >
+            予定作成画面を別タブで開く（URL連携）
+          </a>
+          <p class="muted-text" style="margin-top:2px; font-size:0.85rem;">
+            Googleアカウントで認証し、メインカレンダー（primary）へ直接記録します。
+          </p>
+        </div>
+      `;
+    } else {
+      actionHtml = `
+        <div style="margin-top: 16px;">
+          <a href="${escapeHtml(templateUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="btn-save-calendar" style="width:100%; padding:12px;">
+            Googleカレンダーに予定を作成
+          </a>
+          <p class="muted-text" style="margin-top:8px; font-size:0.85rem;">
+            別タブでGoogleカレンダーの予定作成画面が開きます。内容を確認して「保存」を押してください。
+          </p>
+        </div>
+      `;
+    }
 
     container.innerHTML = `
       <div class="view-header">
@@ -65,6 +127,7 @@ export function renderCompleteView(container, result, actions) {
           <div class="field-label">カレンダー登録状態</div>
           <div>${badgeHtml}</div>
         </div>
+        ${errorHtml}
         ${actionHtml}
       </section>
     `;
@@ -73,10 +136,37 @@ export function renderCompleteView(container, result, actions) {
       actions.onBackHome();
     });
 
+    container.querySelector("#btn-save-calendar-api")?.addEventListener("click", async () => {
+      if (currentStatus === "saving" || currentStatus === "saved") return;
+      currentStatus = "saving";
+      errorMessage = "";
+      renderContent();
+
+      try {
+        const saved = await saveResultToGoogleCalendar(result);
+        currentStatus = "saved";
+        savedLink = saved.htmlLink || "";
+        actions.onSaved(result.executionId, savedLink);
+      } catch (err) {
+        currentStatus = "error";
+        errorMessage = err?.message || "Googleカレンダーへの記録に失敗しました。";
+      }
+      renderContent();
+    });
+
+    container.querySelector("#btn-save-calendar-template")?.addEventListener("click", () => {
+      if (currentStatus === "saving" || currentStatus === "saved") return;
+      currentStatus = "saved";
+      savedLink = templateUrl;
+      actions.onSaved(result.executionId, templateUrl);
+      renderContent();
+    });
+
     container.querySelector("#btn-save-calendar")?.addEventListener("click", () => {
       if (currentStatus === "saved") return;
       currentStatus = "saved";
-      actions.onSaved(result.executionId, calendarUrl);
+      savedLink = templateUrl;
+      actions.onSaved(result.executionId, templateUrl);
       renderContent();
     });
   };

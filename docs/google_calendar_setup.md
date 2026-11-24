@@ -88,8 +88,12 @@
 本番公開を行う前に、テスト状態で動作確認を行います。
 
 1. 「OAuth 同意画面」の **「テストユーザー」** に自身のGoogleアカウントを追加します。
-2. アプリ側の設定（環境変数等）に手順5で取得した **クライアント ID** を設定します。
-3. アプリを起動し、ルーティン完了画面から「Googleカレンダーに保存」を実行して、`primary` カレンダーに予定（ルーティン名・開始時間・終了時間）が登録されることを確認します。
+2. プロジェクトルートの `.env.example` を `.env` にコピーし、手順5で取得した **クライアント ID** を設定します。
+   ```env
+   GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+   ```
+3. `node scripts/generate-config.mjs` を実行して `public/js/env.js` を生成します（Apache2 公開時は `sudo bash scripts/setup-apache2.sh` 実行時にも自動生成されます）。
+4. アプリを起動し、ルーティン完了画面から「Googleカレンダーに記録」を実行して、`primary` カレンダーに予定（ルーティン名・開始時間・終了時間）が登録されることを確認します。
 
 ---
 

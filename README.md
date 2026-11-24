@@ -21,7 +21,9 @@
 - **ローカル開発起動**: `docker compose up -d` を実行後、`http://localhost:8080` にアクセス
 - **Apache2 エイリアス公開 (`/eyedrops/`)**: Linux (Apache2) 環境で `sudo bash scripts/setup-apache2.sh` を実行
 - **自動検証テスト**: `node tests/run_tests.mjs`
-- **Googleカレンダー連携**: 完了画面のボタンから入力済みの Google カレンダー予定作成画面を別タブで開きます（Google Cloud での OAuth 設定やドメイン取得は不要です）。
+- **Googleカレンダー連携**:
+  - `.env` に `GOOGLE_CLIENT_ID` を設定して `node scripts/generate-config.mjs`（または `setup-apache2.sh`）を実行すると、Google Calendar API（GIS 認証）による直接記録が有効になります。
+  - `GOOGLE_CLIENT_ID` が未設定の場合は、入力済みの Google カレンダー予定作成画面を別タブで開く URL 連携のみが動作します。
 
 ## 計画
 
