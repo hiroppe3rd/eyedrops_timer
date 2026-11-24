@@ -18,11 +18,13 @@
 
 ## 起動方法・テスト
 
-- **ローカル開発起動**: `docker compose up -d` を実行後、`http://localhost:8080` にアクセス
-- **Apache2 エイリアス公開 (`/eyedrops/`)**: Linux (Apache2) 環境で `sudo bash scripts/setup-apache2.sh` を実行
-- **自動検証テスト**: `node tests/run_tests.mjs`
+- **本番 Docker 起動**: `bash scripts/eyedrops.sh up`（または `docker compose up -d --build`）を実行後、`http://localhost:8080` にアクセス
+- **ローカル開発起動**: `bash scripts/eyedrops.sh dev`（`./public` をマウントして即時反映）
+- **ステータス・ログ・停止**: `bash scripts/eyedrops.sh status` / `logs` / `down`（Windows PowerShell は `.\scripts\eyedrops.ps1` を使用）
+- **Apache2 リバースプロキシ (`/eyedrops/`)**: Linux (Apache2) 環境で `sudo bash scripts/setup-apache2.sh` を実行し、起動中の Docker コンテナへ接続（接続先変更時は引数で URL またはポートを指定）
+- **自動検証テスト**: `node tests/run_tests.mjs`（または `bash scripts/eyedrops.sh test`）
 - **Googleカレンダー連携**:
-  - `.env` に `GOOGLE_CLIENT_ID` を設定して `node scripts/generate-config.mjs`（または `setup-apache2.sh`）を実行すると、Google Calendar API（GIS 認証）による直接記録が有効になります。
+  - `.env` に `GOOGLE_CLIENT_ID` を設定してコンテナを起動すると、Google Calendar API（GIS 認証）による直接記録が有効になります（静的配信のみ行う場合は `node scripts/generate-config.mjs`）。
   - `GOOGLE_CLIENT_ID` が未設定の場合は、入力済みの Google カレンダー予定作成画面を別タブで開く URL 連携のみが動作します。
 
 ## 計画

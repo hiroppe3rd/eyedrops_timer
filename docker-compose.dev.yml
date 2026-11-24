@@ -1,0 +1,5 @@
+# 開発用オーバーライド設定（public をマウントして即時反映）
+services:
+  web:
+    volumes:
+      - ./public:/usr/local/apache2/htdocs

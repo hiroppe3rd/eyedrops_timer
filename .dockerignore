@@ -1,0 +1,10 @@
+.git
+.gitignore
+.env
+.env.example
+README.md
+docs
+scripts
+tests
+docker-compose*.yml
+public/js/env.js
