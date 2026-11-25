@@ -57,6 +57,7 @@ export function renderConfirmView(container, routine, voiceSettings, speech, act
             })
             .join("")}
         </ol>
+        <p class="muted-text" style="margin:10px 0 0; font-size:0.84rem;">※ 点眼方法や間隔について医師・薬剤師の指示がある場合は、そちらを優先してください。</p>
       </section>
 
       <section class="card">

@@ -615,6 +615,11 @@ function openMedicationPickerDialog(existingRoutines, onConfirm) {
           <button type="button" role="tab" aria-selected="${activeTab === "existing"}" class="modal-tab ${activeTab === "existing" ? "is-active" : ""}" data-tab="existing">登録済みの薬 (${existingItems.length})</button>
         </div>
         ${
+          activeTab === "templates"
+            ? `<p class="muted-text" style="margin:0 0 10px; font-size:0.84rem;">※ テンプレートの時間は一般的な目安です。医師・薬剤師の指示がある場合はそちらを優先してください。</p>`
+            : ""
+        }
+        ${
           activeTab === "existing"
             ? `<div class="picker-search-wrap">
                 <input type="text" id="picker-search-input" class="text-input" value="${escapeHtml(searchQuery)}" placeholder="薬名・備考・ルーティン名で絞り込み">

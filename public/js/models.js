@@ -24,8 +24,8 @@ export const DURATION_TEMPLATES = [
 export const MEDICATION_TEMPLATES = [
   {
     templateId: "tpl_levo",
-    title: "レポフロキサシン（術前・術後 1日4回）",
-    name: "レポフロキサシン",
+    title: "レボフロキサシン（術前・術後 1日4回）",
+    name: "レボフロキサシン",
     note: "術前・術後 1日4回",
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
@@ -35,8 +35,8 @@ export const MEDICATION_TEMPLATES = [
   },
   {
     templateId: "tpl_bromfenac",
-    title: "プロムフェナクNa（術前・術後 1日2回）",
-    name: "プロムフェナクNa",
+    title: "ブロムフェナクNa（術前・術後 1日2回）",
+    name: "ブロムフェナクNa",
     note: "術前・術後 1日2回",
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
