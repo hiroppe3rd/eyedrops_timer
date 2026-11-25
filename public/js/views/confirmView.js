@@ -1,5 +1,5 @@
 // SCR-03: 開始前確認・音声設定画面
-import { calcRoutineTotalSeconds, escapeHtml, formatDuration } from "../models.js";
+import { STEP_TYPES, calcRoutineTotalSeconds, calcWaitRemainderSeconds, escapeHtml, formatDuration } from "../models.js";
 import { VOICE_RATES, resolvePreferredVoice } from "../speech.js";
 
 /** 開始前確認・音声設定画面の描画 */
@@ -46,9 +46,15 @@ export function renderConfirmView(container, routine, voiceSettings, speech, act
         <ol class="confirm-med-list">
           ${routine.medications
             .map((m) => {
+              const remainderSec = calcWaitRemainderSeconds(m);
               const stepsText = m.steps
                 .filter((s) => Number(s.durationSec) > 0)
-                .map((s) => `${escapeHtml(s.label)}（${escapeHtml(formatDuration(s.durationSec))}）`)
+                .map((s) => {
+                  if (s.type === STEP_TYPES.WAIT) {
+                    return `${escapeHtml(s.label)}（${escapeHtml(formatDuration(s.durationSec))} / 残り待機 ${escapeHtml(formatDuration(remainderSec))}）`;
+                  }
+                  return `${escapeHtml(s.label)}（${escapeHtml(formatDuration(s.durationSec))}）`;
+                })
                 .join(" → ");
               const noteHtml = m.note
                 ? `<div class="muted-text med-note-text">備考: ${escapeHtml(m.note)}</div>`

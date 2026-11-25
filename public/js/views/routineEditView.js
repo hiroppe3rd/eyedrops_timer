@@ -4,6 +4,7 @@ import {
   MEDICATION_TEMPLATES,
   STEP_TYPES,
   appendMedicationsRemovingEmpty,
+  calcWaitRemainderSeconds,
   cloneMedicationForAdd,
   createDefaultMedication,
   createId,
@@ -33,10 +34,22 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
     const medsHtml = draft.medications
       .map((med, medIdx) => {
         const isLast = medIdx === draft.medications.length - 1;
+        const meditationSec =
+          Number(med.steps.find((s) => s.type === STEP_TYPES.MEDITATION)?.durationSec) || 0;
+        const remainderSec = calcWaitRemainderSeconds(med);
         const stepsHtml = med.steps
           .map((step) => {
             if (isLast && step.type === STEP_TYPES.WAIT) return "";
             const stepTitle = getStepTypeTitle(step.type);
+            let waitHintHtml = "";
+            if (step.type === STEP_TYPES.WAIT) {
+              const waitSec = Number(step.durationSec) || 0;
+              if (waitSec > 0 && waitSec < meditationSec) {
+                waitHintHtml = `<div class="muted-text" style="font-size:0.8rem; margin-top:4px;">※ 閉眼時間より短いため、追加の待機時間は 0秒 になります</div>`;
+              } else if (waitSec > 0) {
+                waitHintHtml = `<div class="muted-text" style="font-size:0.8rem; margin-top:4px;">閉眼後の残り待機時間: ${escapeHtml(formatDuration(remainderSec))}（閉眼を早めに終えても間隔 ${escapeHtml(formatDuration(waitSec))} を維持します）</div>`;
+              }
+            }
             return `
               <div class="step-field">
                 <label class="field-label">${stepTitle}（表示名 / 時間）</label>
@@ -57,6 +70,7 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
                     data-step-type="${step.type}"
                   >${escapeHtml(formatDuration(step.durationSec))}</button>
                 </div>
+                ${waitHintHtml}
               </div>
             `;
           })
@@ -395,7 +409,7 @@ function captureCardRects(listEl) {
 function getStepTypeTitle(type) {
   if (type === STEP_TYPES.PREPARE) return "準備";
   if (type === STEP_TYPES.MEDITATION) return "直後の閉眼";
-  if (type === STEP_TYPES.WAIT) return "次の点眼までの待機";
+  if (type === STEP_TYPES.WAIT) return "次の点眼までの間隔";
   return "工程";
 }
 

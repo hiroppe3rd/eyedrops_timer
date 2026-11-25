@@ -10,6 +10,7 @@ import {
   STEP_TYPES,
   appendMedicationsRemovingEmpty,
   calcRoutineTotalSeconds,
+  calcWaitRemainderSeconds,
   cloneMedicationForAdd,
   createDefaultRoutine,
   extractExistingMedications,
@@ -97,7 +98,8 @@ await test("時間テンプレート11種・手入力換算・バリデーショ
   // 最後の薬に待機工程がないこと
   assert.equal(rt.medications[1].steps.length, 2);
   assert.equal(validateRoutine(rt).length, 0);
-  assert.equal(calcRoutineTotalSeconds(rt), 15 + 60 + 300 + 10 + 60);
+  assert.equal(calcWaitRemainderSeconds(rt.medications[0]), 240);
+  assert.equal(calcRoutineTotalSeconds(rt), 15 + 300 + 10 + 60);
 
   // 未保存履歴の削除・日時整形ヘルパー検証
   const pending = [
@@ -149,6 +151,45 @@ await test("localStorage 永続化・復元・スキーマバージョン", () =
   assert.equal(migrated.routines.length, 1);
   assert.equal(migrated.routines[0].name, "旧ルーティン");
   assert.equal(migrated.pendingResults[0].routineName, "旧ルーティン");
+
+  // v2 スキーマ（閉眼＋追加待機）から v3（点眼間隔基準）へのマイグレーション確認
+  store.set(
+    "eyedrops_timer_data",
+    JSON.stringify({
+      schemaVersion: 2,
+      routines: [
+        {
+          id: "rt_v2",
+          name: "術後点眼",
+          order: 0,
+          medications: [
+            {
+              id: "m1",
+              name: "レボフロキサシン",
+              steps: [
+                { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
+                { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
+                { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+              ],
+            },
+            {
+              id: "m2",
+              name: "サンベタゾン",
+              steps: [
+                { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
+                { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
+              ],
+            },
+          ],
+        },
+      ],
+    })
+  );
+  const migratedV3 = loadAppData();
+  assert.equal(migratedV3.schemaVersion, SCHEMA_VERSION);
+  const waitStepV3 = migratedV3.routines[0].medications[0].steps[2];
+  assert.equal(waitStepV3.durationSec, 300);
+  assert.equal(waitStepV3.label, "次の点眼までの間隔");
 
   // 破損JSON時もクラッシュしないこと
   store.set("eyedrops_timer_data", "{broken-json");
@@ -577,6 +618,83 @@ await test("Google Calendar API: ペイロード生成と登録・エラーハ�
       }),
     /Invalid Credentials/
   );
+});
+
+// 11. 方針A: 閉眼スキップ時にも点眼間隔が維持されることの検証
+await test("閉眼の完了・途中スキップに応じて待機時間が動的に調整され点眼間隔が維持されること", () => {
+  let fakeNow = 2_000_000;
+  const origNow = Date.now;
+  Date.now = () => fakeNow;
+
+  const intervals = new Map();
+  let nextTimerId = 1;
+  globalThis.window = {
+    setInterval: (fn) => {
+      const id = nextTimerId++;
+      intervals.set(id, fn);
+      return id;
+    },
+    clearInterval: (id) => {
+      intervals.delete(id);
+    },
+  };
+
+  try {
+    const routine = {
+      medications: [
+        {
+          name: "薬1",
+          steps: [
+            { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
+            { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
+            { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
+          ],
+        },
+        {
+          name: "薬2",
+          steps: [
+            { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
+            { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
+          ],
+        },
+      ],
+    };
+    const queue = buildExecutionQueue(routine);
+    assert.equal(queue[2].durationSec, 180);
+    assert.equal(queue[2].intervalSec, 300);
+
+    // ケース1: 閉眼を30秒でスキップ → 待機が270秒に延長され合計300秒間隔を維持
+    const startedSteps = [];
+    const runner = createTimerRunner(queue, {
+      onStepStart: (step) => startedSteps.push({ type: step.type, durationSec: step.durationSec }),
+    });
+    runner.start();
+    fakeNow += 10_000;
+    runner.syncNow(); // 薬1:meditation (120秒) 開始
+    fakeNow += 30_000;
+    runner.skip(); // 30秒時点で閉眼をスキップ
+
+    const waitStart = startedSteps.find((s) => s.type === STEP_TYPES.WAIT);
+    assert.equal(waitStart.durationSec, 270);
+    runner.destroy();
+
+    // ケース2: 閉眼120秒を最後まで完了 → 待機は180秒
+    const startedStepsFull = [];
+    const runnerFull = createTimerRunner(queue, {
+      onStepStart: (step) => startedStepsFull.push({ type: step.type, durationSec: step.durationSec }),
+    });
+    runnerFull.start();
+    fakeNow += 10_000;
+    runnerFull.syncNow(); // 薬1:meditation 開始
+    fakeNow += 120_000;
+    runnerFull.syncNow(); // 薬1:meditation 完了 → 待機開始
+
+    const waitStartFull = startedStepsFull.find((s) => s.type === STEP_TYPES.WAIT);
+    assert.equal(waitStartFull.durationSec, 180);
+    runnerFull.destroy();
+  } finally {
+    Date.now = origNow;
+  }
 });
 
 console.log(`\n全 ${passed} 件の検証テストが合格しました。`);

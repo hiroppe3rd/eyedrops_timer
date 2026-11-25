@@ -30,7 +30,7 @@ export const MEDICATION_TEMPLATES = [
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
     ],
   },
   {
@@ -41,7 +41,7 @@ export const MEDICATION_TEMPLATES = [
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
     ],
   },
   {
@@ -52,7 +52,7 @@ export const MEDICATION_TEMPLATES = [
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
     ],
   },
   {
@@ -63,7 +63,7 @@ export const MEDICATION_TEMPLATES = [
     steps: [
       { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
       { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 180 },
+      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
     ],
   },
 ];
@@ -83,7 +83,7 @@ export function createDefaultMedication(isLast = false) {
     { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
   ];
   if (!isLast) {
-    steps.push({ type: STEP_TYPES.WAIT, label: "次の点眼までの待機", durationSec: 300 });
+    steps.push({ type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 });
   }
   return {
     id: createId("med"),
@@ -117,17 +117,25 @@ export function formatDuration(seconds) {
   return `${mins}分${rem}秒`;
 }
 
+/** 閉眼時間を差し引いた予定待機秒数を算出 */
+export function calcWaitRemainderSeconds(med) {
+  const steps = Array.isArray(med?.steps) ? med.steps : [];
+  const meditationSec = Number(steps.find((s) => s.type === STEP_TYPES.MEDITATION)?.durationSec) || 0;
+  const waitSec = Number(steps.find((s) => s.type === STEP_TYPES.WAIT)?.durationSec) || 0;
+  return Math.max(0, waitSec - meditationSec);
+}
+
 /** ルーティンの合計予定秒数を算出 */
 export function calcRoutineTotalSeconds(routine) {
   if (!routine || !Array.isArray(routine.medications)) return 0;
   return routine.medications.reduce((total, med, idx) => {
     const isLast = idx === routine.medications.length - 1;
-    const medSec = (med.steps || []).reduce((sum, step) => {
-      // 最後の薬の待機工程は合算しない
-      if (isLast && step.type === STEP_TYPES.WAIT) return sum;
-      return sum + (Number(step.durationSec) || 0);
-    }, 0);
-    return total + medSec;
+    const steps = Array.isArray(med.steps) ? med.steps : [];
+    const prepareSec = Number(steps.find((s) => s.type === STEP_TYPES.PREPARE)?.durationSec) || 0;
+    const meditationSec = Number(steps.find((s) => s.type === STEP_TYPES.MEDITATION)?.durationSec) || 0;
+    // 最後の薬以外は、点眼間隔（wait）と閉眼時間の大きい方を採用して合算
+    const afterDropSec = isLast ? meditationSec : meditationSec + calcWaitRemainderSeconds(med);
+    return total + prepareSec + afterDropSec;
   }, 0);
 }
 
@@ -150,7 +158,7 @@ export function normalizeRoutineSteps(medications) {
     if (!isLast) {
       const wait = med.steps.find((s) => s.type === STEP_TYPES.WAIT) || {
         type: STEP_TYPES.WAIT,
-        label: "次の点眼までの待機",
+        label: "次の点眼までの間隔",
         durationSec: 300,
       };
       steps.push({ ...wait });
@@ -256,7 +264,7 @@ export function cloneMedicationForAdd(source) {
   };
   const wait = srcSteps.find((s) => s.type === STEP_TYPES.WAIT) || {
     type: STEP_TYPES.WAIT,
-    label: "次の点眼までの待機",
+    label: "次の点眼までの間隔",
     durationSec: 300,
   };
   return {
