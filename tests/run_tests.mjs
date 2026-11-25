@@ -23,8 +23,10 @@ import {
 import { SCHEMA_VERSION, loadAppData, saveAppData } from "../public/js/storage.js";
 import { buildExecutionQueue, createTimerRunner, formatClock } from "../public/js/timerEngine.js";
 import {
+  SpeechGuideController,
   buildStepCompleteSpeech,
   buildStepStartSpeech,
+  normalizeSpeechText,
   resolvePreferredVoice,
 } from "../public/js/speech.js";
 import {
@@ -257,6 +259,40 @@ await test("Google 日本語優先選択と点眼ガイド文生成", () => {
   );
   assert.equal(startTxt, "ヒアルロン酸 を点眼してください。続けて、直後の閉眼、1分、開始。");
   assert.equal(buildStepCompleteSpeech({ label: "準備" }), "準備、完了。");
+  assert.equal(
+    normalizeSpeechText(startTxt),
+    "ヒアルロン酸 を点眼してください。続けて、直後のへいがん、1分、開始。"
+  );
+  assert.equal(normalizeSpeechText("閉眼、完了。"), "へいがん、完了。");
+
+  // 字幕表示は元の表記を維持し、発話テキストのみ読み補正されること
+  const origWindow = globalThis.window;
+  const origUtterance = globalThis.SpeechSynthesisUtterance;
+  try {
+    const spokenTexts = [];
+    const subtitleTexts = [];
+    globalThis.SpeechSynthesisUtterance = class {
+      constructor(text) {
+        this.text = text;
+      }
+    };
+    globalThis.window = {
+      speechSynthesis: {
+        speaking: false,
+        getVoices: () => voices,
+        cancel: () => {},
+        speak: (utter) => spokenTexts.push(utter.text),
+      },
+    };
+    const controller = new SpeechGuideController();
+    controller.onSubtitle = (txt) => subtitleTexts.push(txt);
+    controller.speak(startTxt);
+    assert.deepEqual(subtitleTexts, [startTxt]);
+    assert.deepEqual(spokenTexts, ["ヒアルロン酸 を点眼してください。続けて、直後のへいがん、1分、開始。"]);
+  } finally {
+    globalThis.window = origWindow;
+    globalThis.SpeechSynthesisUtterance = origUtterance;
+  }
 });
 
 // 6. calendar.js の予定作成URL生成・別タブ遷移検証

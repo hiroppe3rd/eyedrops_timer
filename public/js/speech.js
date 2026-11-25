@@ -7,6 +7,19 @@ export const VOICE_RATES = [
   { label: "早く (1.30x)", value: 1.3 },
 ];
 
+// 音声合成の誤読を防ぐための読み補正ルール
+const SPEECH_READING_CORRECTIONS = [["閉眼", "へいがん"]];
+
+/** 音声合成用に誤読されやすい単語を読みがなへ補正 */
+export function normalizeSpeechText(text) {
+  if (!text) return "";
+  let normalized = String(text);
+  for (const [target, reading] of SPEECH_READING_CORRECTIONS) {
+    normalized = normalized.replaceAll(target, reading);
+  }
+  return normalized;
+}
+
 /** 日本語音声を優先して並び替え */
 export function sortVoicesForJa(voices) {
   return [...voices].sort((a, b) => {
@@ -105,7 +118,7 @@ export class SpeechGuideController {
           window.speechSynthesis.cancel();
         }
       }
-      const utter = new SpeechSynthesisUtterance(text);
+      const utter = new SpeechSynthesisUtterance(normalizeSpeechText(text));
       utter.lang = targetVoice?.lang || "ja-JP";
       if (targetVoice) utter.voice = targetVoice;
       utter.rate = this.rate;
