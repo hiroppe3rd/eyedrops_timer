@@ -35,9 +35,10 @@ export function renderConfirmView(container, routine, voiceSettings, speech, act
 
     container.innerHTML = `
       <div class="view-header">
-        <button type="button" class="btn btn-secondary" id="btn-back-list">← 一覧へ</button>
+        <div class="view-header-top">
+          <button type="button" class="btn btn-secondary" id="btn-back-list">← 一覧へ</button>
+        </div>
         <h1>開始前確認</h1>
-        <span></span>
       </div>
 
       <section class="card">
@@ -86,8 +87,8 @@ export function renderConfirmView(container, routine, voiceSettings, speech, act
         </div>
       </section>
 
-      <div style="margin-top: 16px;">
-        <button type="button" class="btn btn-primary" id="btn-start-timer" style="width:100%; padding:12px;">タイマーを開始する</button>
+      <div class="primary-cta-wrap">
+        <button type="button" class="btn btn-primary btn-block" id="btn-start-timer">タイマーを開始する</button>
       </div>
     `;
 

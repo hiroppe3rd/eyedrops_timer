@@ -14,9 +14,10 @@ export function renderTimerView(container, routine, actions) {
   if (queue.length === 0) {
     container.innerHTML = `
       <div class="view-header">
-        <button type="button" class="btn btn-secondary" id="btn-empty-back">← 戻る</button>
+        <div class="view-header-top">
+          <button type="button" class="btn btn-secondary" id="btn-empty-back">← 一覧へ</button>
+        </div>
         <h1>タイマー実行</h1>
-        <span></span>
       </div>
       <section class="card">
         <p>実行可能な工程（1秒以上）がありません。ルーティン設定を見直してください。</p>
@@ -30,9 +31,11 @@ export function renderTimerView(container, routine, actions) {
 
   container.innerHTML = `
     <div class="view-header">
-      <span class="meta-pill" id="timer-med-progress">薬 1 / 1</span>
       <h1>${escapeHtml(routine.name)}</h1>
-      <span class="meta-pill" id="timer-wakelock-badge">Wake Lock 確認中</span>
+      <div class="view-header-meta">
+        <span class="meta-pill" id="timer-med-progress">薬 1 / 1</span>
+        <span class="meta-pill" id="timer-wakelock-badge">Wake Lock 確認中</span>
+      </div>
     </div>
 
     <section class="card timer-card" id="timer-card">
@@ -49,16 +52,16 @@ export function renderTimerView(container, routine, actions) {
     </section>
 
     <div class="timer-controls" id="timer-running-controls">
-      <button type="button" class="btn btn-warn" id="btn-pause">⏸ 一時停止</button>
-      <button type="button" class="btn btn-secondary" id="btn-skip">⏭ この工程をスキップ</button>
+      <button type="button" class="btn btn-warn btn-block" id="btn-pause">⏸ 一時停止</button>
+      <button type="button" class="btn btn-secondary btn-block" id="btn-skip">⏭ この工程をスキップ</button>
     </div>
 
     <section class="card pause-panel" id="timer-pause-panel" hidden>
       <h2 style="margin-top:0; font-size:1.05rem;">一時停止中</h2>
       <div class="pause-actions">
-        <button type="button" class="btn btn-primary" id="btn-resume">▶ 再開</button>
-        <button type="button" class="btn btn-secondary" id="btn-restart">↺ 最初からやり直す</button>
-        <button type="button" class="btn btn-danger" id="btn-abort">一覧へ戻る（中断）</button>
+        <button type="button" class="btn btn-primary btn-block" id="btn-resume">▶ 再開</button>
+        <button type="button" class="btn btn-secondary btn-block" id="btn-restart">↺ 最初からやり直す</button>
+        <button type="button" class="btn btn-danger btn-block" id="btn-abort">一覧へ戻る（中断）</button>
       </div>
     </section>
   `;

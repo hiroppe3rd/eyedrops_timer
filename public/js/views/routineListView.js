@@ -1,4 +1,5 @@
 // SCR-01: ルーティン一覧画面
+import { openActionMenu } from "../actionMenu.js";
 import { calcRoutineTotalSeconds, escapeHtml, formatDateTime, formatDuration } from "../models.js";
 
 /** 一覧画面の描画とイベント設定 */
@@ -63,12 +64,17 @@ export function renderRoutineListView(container, state, actions) {
                     <span class="drag-handle" title="ドラッグして並び替え" aria-label="並び替えハンドル">☰</span>
                     <h2 class="routine-title">${escapeHtml(rt.name)}</h2>
                   </div>
-                  <span class="meta-pill">薬${medCount}種 / 計 ${escapeHtml(formatDuration(totalSec))}</span>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-icon-menu"
+                    data-action="menu"
+                    data-id="${escapeHtml(rt.id)}"
+                    aria-label="${escapeHtml(rt.name)}のメニューを開く"
+                  >⋯</button>
                 </div>
+                <div class="routine-meta">薬${medCount}種 ・ 計 ${escapeHtml(formatDuration(totalSec))}</div>
                 <div class="routine-card-actions">
-                  <button type="button" class="btn btn-primary" data-action="start" data-id="${escapeHtml(rt.id)}">確認して開始</button>
-                  <button type="button" class="btn btn-secondary" data-action="edit" data-id="${escapeHtml(rt.id)}">編集</button>
-                  <button type="button" class="btn btn-danger" data-action="delete" data-id="${escapeHtml(rt.id)}">削除</button>
+                  <button type="button" class="btn btn-primary btn-block" data-action="start" data-id="${escapeHtml(rt.id)}">確認して開始</button>
                 </div>
               </article>
             `;
@@ -83,7 +89,9 @@ export function renderRoutineListView(container, state, actions) {
   container.innerHTML = `
     <div class="view-header">
       <h1>ルーティン一覧</h1>
-      <button type="button" class="btn btn-primary" id="btn-new-routine">＋ 新規作成</button>
+    </div>
+    <div class="primary-cta-wrap" style="margin-top:0; margin-bottom:16px;">
+      <button type="button" class="btn btn-primary btn-block" id="btn-new-routine">＋ 新規作成</button>
     </div>
     ${pendingBannerHtml}
     ${listHtml}
@@ -118,8 +126,20 @@ export function renderRoutineListView(container, state, actions) {
       const id = btn.dataset.id;
       const action = btn.dataset.action;
       if (action === "start") actions.onStart(id);
-      if (action === "edit") actions.onEdit(id);
-      if (action === "delete") actions.onDelete(id);
+      if (action === "menu") {
+        const target = sorted.find((r) => r.id === id);
+        if (!target) return;
+        const totalSec = calcRoutineTotalSeconds(target);
+        const medCount = (target.medications || []).length;
+        openActionMenu({
+          title: target.name,
+          subtitle: `薬${medCount}種 ・ 計 ${formatDuration(totalSec)}`,
+          items: [
+            { label: "編集", variant: "secondary", onSelect: () => actions.onEdit(id) },
+            { label: "削除", variant: "danger", onSelect: () => actions.onDelete(id) },
+          ],
+        });
+      }
     });
   });
 

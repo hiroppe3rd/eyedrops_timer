@@ -51,7 +51,8 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 10px 12px;
 }
 
 .brand {
@@ -59,6 +60,7 @@ body {
   align-items: center;
   gap: 10px;
   min-width: 0;
+  flex: 1 1 auto;
 }
 
 .btn-install-app {
@@ -81,6 +83,7 @@ body {
   height: 32px;
   border-radius: 8px;
   object-fit: cover;
+  flex-shrink: 0;
 }
 
 .brand-name {
@@ -88,6 +91,7 @@ body {
   font-size: 1.05rem;
   color: var(--text);
   text-decoration: none;
+  overflow-wrap: anywhere;
 }
 
 .app-main {
@@ -118,18 +122,35 @@ body {
   color: var(--primary);
 }
 
-/* ビューヘッダー */
+/* ビューヘッダー（全画面共通の縦積み構造） */
 .view-header {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.view-header-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 .view-header h1 {
   margin: 0;
-  font-size: 1.3rem;
+  font-size: 1.35rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.view-header-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
 /* 共通カード・ボタン */
@@ -146,13 +167,17 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  min-height: 44px;
   padding: 8px 14px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--text);
-  font-size: 0.9rem;
+  font-size: 0.95rem;
   font-weight: 600;
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
   cursor: pointer;
   text-decoration: none;
   transition: background-color 0.15s, border-color 0.15s;
@@ -164,8 +189,37 @@ body {
 }
 
 .btn-sm {
-  padding: 5px 10px;
-  font-size: 0.82rem;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.btn-block {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 1rem;
+}
+
+.btn-icon-menu {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 6px 10px;
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.btn-icon-menu:hover:not(:disabled) {
+  background: #f1f5f9;
+  color: var(--text);
+}
+
+.primary-cta-wrap {
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .btn-primary {
@@ -195,7 +249,8 @@ body {
 }
 
 .btn-duration {
-  min-width: 92px;
+  flex: 0 1 auto;
+  min-width: 110px;
   background: var(--surface-alt);
   border-color: var(--primary);
   color: var(--primary);
@@ -243,44 +298,59 @@ body {
 .routine-card-head {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .routine-title-wrap,
 .med-title-wrap {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
+  flex: 1;
+  min-width: 0;
 }
 
 .routine-title {
   margin: 0;
-  font-size: 1.08rem;
+  font-size: 1.12rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.routine-meta {
+  font-size: 0.92rem;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+  overflow-wrap: anywhere;
 }
 
 .drag-handle {
   cursor: grab;
   color: var(--text-muted);
-  font-size: 1.1rem;
+  font-size: 1.15rem;
   user-select: none;
   padding: 2px 4px;
+  flex-shrink: 0;
 }
 
 .meta-pill {
-  font-size: 0.8rem;
+  display: inline-block;
+  font-size: 0.85rem;
   color: var(--text-muted);
   background: var(--surface-alt);
   border: 1px solid var(--border);
-  padding: 3px 10px;
+  padding: 4px 10px;
   border-radius: 999px;
-  white-space: nowrap;
+  max-width: 100%;
+  white-space: normal;
+  line-height: 1.35;
 }
 
 .routine-card-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
 }
 
@@ -305,7 +375,7 @@ body {
 
 .field-label {
   display: block;
-  font-size: 0.84rem;
+  font-size: 0.88rem;
   font-weight: 600;
   color: var(--text-muted);
   margin-bottom: 4px;
@@ -314,10 +384,11 @@ body {
 .text-input,
 .select-input {
   width: 100%;
+  min-height: 44px;
   padding: 9px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  font-size: 0.95rem;
+  font-size: 1rem;
   font-family: inherit;
   background: var(--surface);
   color: var(--text);
@@ -334,6 +405,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 10px;
   margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--bg);
@@ -451,12 +523,14 @@ body {
 
 .step-input-row {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .step-input-row .text-input {
-  flex: 1;
+  flex: 1 1 180px;
+  min-width: 0;
 }
 
 /* 時間設定モーダル */
@@ -474,6 +548,8 @@ body {
 .modal-dialog {
   width: 100%;
   max-width: 440px;
+  max-height: 90vh;
+  overflow-y: auto;
   background: var(--surface);
   border-radius: var(--radius);
   padding: 20px;
@@ -483,37 +559,31 @@ body {
 .modal-dialog h2 {
   margin: 0 0 14px;
   font-size: 1.12rem;
+  overflow-wrap: anywhere;
 }
 
 .modal-section {
   margin-bottom: 16px;
 }
 
-.template-grid {
+.manual-duration-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-}
-
-.btn-chip {
-  padding: 6px 10px;
-  font-size: 0.84rem;
-}
-
-.btn-chip:hover {
-  border-color: var(--primary);
-  color: var(--primary);
-}
-
-.manual-duration-row {
-  display: grid;
-  grid-template-columns: 1fr 90px;
   gap: 8px;
+}
+
+.manual-duration-row .text-input {
+  flex: 1 1 140px;
+  min-width: 0;
+}
+
+.manual-duration-row .select-input {
+  flex: 0 0 96px;
 }
 
 .duration-preview {
   margin-top: 8px;
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   color: var(--accent);
   font-weight: 600;
 }
@@ -524,6 +594,7 @@ body {
 
 .modal-actions {
   display: flex;
+  flex-wrap: wrap;
   justify-content: flex-end;
   gap: 8px;
   margin-top: 18px;
@@ -546,15 +617,17 @@ body {
 }
 
 .timer-med-name {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--primary);
+  overflow-wrap: anywhere;
 }
 
 .timer-step-label {
   font-size: 1.3rem;
   font-weight: 700;
   margin-top: 4px;
+  overflow-wrap: anywhere;
 }
 
 .timer-guide-banner {
@@ -564,12 +637,12 @@ body {
   background: #e0f2fe;
   color: #0369a1;
   font-weight: 700;
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   max-width: 420px;
 }
 
 .timer-clock {
-  font-size: 3.4rem;
+  font-size: clamp(2.2rem, 11vw, 3.4rem);
   font-weight: 800;
   letter-spacing: 0.04em;
   margin: 14px 0;
@@ -593,9 +666,8 @@ body {
 
 .timer-controls {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
   margin-bottom: 14px;
 }
 
@@ -605,9 +677,8 @@ body {
 
 .pause-actions {
   display: flex;
-  justify-content: center;
+  flex-direction: column;
   gap: 10px;
-  flex-wrap: wrap;
 }
 
 /* 音声設定・視覚フィードバック */
@@ -713,11 +784,10 @@ body {
 
 .pending-item {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
   gap: 10px;
-  flex-wrap: wrap;
-  padding: 10px 12px;
+  padding: 12px;
   background: var(--surface);
   border: 1px solid var(--warn-border);
   border-radius: 8px;
@@ -725,22 +795,27 @@ body {
 
 .pending-item-info {
   min-width: 0;
-  flex: 1 1 200px;
 }
 
 .pending-item-title {
   font-weight: 700;
-  font-size: 0.95rem;
+  font-size: 0.98rem;
+  overflow-wrap: anywhere;
 }
 
 .pending-item-time {
-  font-size: 0.82rem;
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
 }
 
 .pending-item-actions {
   display: flex;
-  gap: 6px;
-  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.pending-item-actions .btn {
+  flex: 1 1 120px;
 }
 
 /* 行程複製・テンプレート選択・備考 */
@@ -748,6 +823,7 @@ body {
   display: flex;
   gap: 6px;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .edit-add-actions {
@@ -755,6 +831,10 @@ body {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+}
+
+.edit-add-actions .btn {
+  flex: 1 1 200px;
 }
 
 .med-note-text {
@@ -897,4 +977,50 @@ body {
   flex-direction: column;
   gap: 8px;
   font-size: 0.92rem;
+}
+
+/* 共通アクションメニュー（ボトムシート風モーダル） */
+.action-sheet-backdrop {
+  align-items: flex-end;
+  padding: 12px;
+}
+
+.action-sheet-dialog {
+  max-width: 480px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.action-sheet-header {
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.action-sheet-title {
+  margin: 0 !important;
+  font-size: 1.08rem;
+  overflow-wrap: anywhere;
+}
+
+.action-sheet-subtitle {
+  margin: 4px 0 0;
+  font-size: 0.86rem;
+  overflow-wrap: anywhere;
+}
+
+.action-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.action-sheet-cancel {
+  padding-top: 4px;
+}
+
+@media (min-width: 600px) {
+  .action-sheet-backdrop {
+    align-items: center;
+  }
 }

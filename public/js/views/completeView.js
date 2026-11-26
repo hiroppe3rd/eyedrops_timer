@@ -11,9 +11,10 @@ export function renderCompleteView(container, result, actions) {
   if (!result) {
     container.innerHTML = `
       <div class="view-header">
-        <span></span>
+        <div class="view-header-top">
+          <button type="button" class="btn btn-secondary" id="btn-done-home">← 一覧へ</button>
+        </div>
         <h1>ルーティン完了</h1>
-        <button type="button" class="btn btn-secondary" id="btn-done-home">一覧へ</button>
       </div>
       <section class="card">
         <p>表示できる完了履歴がありません。</p>
@@ -56,7 +57,7 @@ export function renderCompleteView(container, result, actions) {
         : "もう一度Googleカレンダーを開く";
       actionHtml = `
         <div style="margin-top: 16px; display:flex; flex-direction:column; gap:10px;">
-          <a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="width:100%;">${linkLabel}</a>
+          <a href="${escapeHtml(linkUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary btn-block">${linkLabel}</a>
         </div>
       `;
     } else if (hasClientId) {
@@ -69,9 +70,8 @@ export function renderCompleteView(container, result, actions) {
         <div style="margin-top: 16px; display:flex; flex-direction:column; gap:10px;">
           <button
             type="button"
-            class="btn btn-primary"
+            class="btn btn-primary btn-block"
             id="btn-save-calendar-api"
-            style="width:100%; padding:12px;"
             ${isSaving ? "disabled" : ""}
           >
             ${btnLabel}
@@ -80,9 +80,8 @@ export function renderCompleteView(container, result, actions) {
             href="${escapeHtml(templateUrl)}"
             target="_blank"
             rel="noopener noreferrer"
-            class="btn btn-secondary"
+            class="btn btn-secondary btn-block"
             id="btn-save-calendar-template"
-            style="width:100%;"
           >
             予定作成画面を別タブで開く（URL連携）
           </a>
@@ -94,7 +93,7 @@ export function renderCompleteView(container, result, actions) {
     } else {
       actionHtml = `
         <div style="margin-top: 16px;">
-          <a href="${escapeHtml(templateUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" id="btn-save-calendar" style="width:100%; padding:12px;">
+          <a href="${escapeHtml(templateUrl)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary btn-block" id="btn-save-calendar">
             Googleカレンダーに予定を作成
           </a>
           <p class="muted-text" style="margin-top:8px; font-size:0.85rem;">
@@ -106,9 +105,10 @@ export function renderCompleteView(container, result, actions) {
 
     container.innerHTML = `
       <div class="view-header">
-        <span></span>
+        <div class="view-header-top">
+          <button type="button" class="btn btn-secondary" id="btn-done-home">← 一覧へ</button>
+        </div>
         <h1>ルーティン完了</h1>
-        <button type="button" class="btn btn-secondary" id="btn-done-home">一覧へ</button>
       </div>
 
       <section class="card">
@@ -130,9 +130,16 @@ export function renderCompleteView(container, result, actions) {
         ${errorHtml}
         ${actionHtml}
       </section>
+
+      <div class="primary-cta-wrap">
+        <button type="button" class="btn btn-secondary btn-block" data-action="back-home">一覧へ戻る</button>
+      </div>
     `;
 
     container.querySelector("#btn-done-home")?.addEventListener("click", () => {
+      actions.onBackHome();
+    });
+    container.querySelector('[data-action="back-home"]')?.addEventListener("click", () => {
       actions.onBackHome();
     });
 

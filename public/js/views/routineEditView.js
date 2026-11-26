@@ -1,4 +1,5 @@
 // SCR-02: ルーティン作成・編集画面（時間設定ダイアログ含む）
+import { openActionMenu } from "../actionMenu.js";
 import {
   DURATION_TEMPLATES,
   MEDICATION_TEMPLATES,
@@ -86,17 +87,11 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
               <div class="med-card-actions">
                 <button
                   type="button"
-                  class="btn btn-secondary btn-sm"
-                  data-action="duplicate-med"
+                  class="btn btn-secondary btn-icon-menu"
+                  data-action="med-menu"
                   data-med-idx="${medIdx}"
-                >複製</button>
-                <button
-                  type="button"
-                  class="btn btn-danger btn-sm"
-                  data-action="remove-med"
-                  data-med-idx="${medIdx}"
-                  ${draft.medications.length <= 1 ? "disabled" : ""}
-                >薬削除</button>
+                  aria-label="薬 ${medIdx + 1} のメニューを開く"
+                >⋯</button>
               </div>
             </div>
             <div class="form-group">
@@ -134,9 +129,15 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
 
     container.innerHTML = `
       <div class="view-header">
-        <button type="button" class="btn btn-secondary" id="btn-back">← 戻る</button>
+        <div class="view-header-top">
+          <button type="button" class="btn btn-secondary" id="btn-back">← 一覧へ</button>
+          ${
+            !isNew
+              ? `<button type="button" class="btn btn-secondary btn-icon-menu" id="btn-routine-menu" aria-label="ルーティンのメニューを開く">⋯</button>`
+              : ""
+          }
+        </div>
         <h1>${isNew ? "ルーティン新規作成" : "ルーティン編集"}</h1>
-        <button type="button" class="btn btn-primary" id="btn-save-routine">保存</button>
       </div>
       ${errorsHtml}
       <div class="card">
@@ -154,7 +155,10 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
       <div id="medications-list">${medsHtml}</div>
       <div class="edit-add-actions">
         <button type="button" class="btn btn-secondary" id="btn-add-med">＋ 点眼薬を追加</button>
-        <button type="button" class="btn btn-secondary" id="btn-add-from-template">📋 テンプレート／既存から追加</button>
+        <button type="button" class="btn btn-secondary" id="btn-add-from-template">📋 よく使う薬／登録済みから追加</button>
+      </div>
+      <div class="primary-cta-wrap">
+        <button type="button" class="btn btn-primary btn-block" id="btn-save-routine">保存</button>
       </div>
     `;
 
@@ -296,69 +300,104 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
       });
     });
 
-    container.querySelectorAll('[data-action="duplicate-med"]').forEach((btn) => {
+    container.querySelector("#btn-routine-menu")?.addEventListener("click", () => {
+      if (isRemoving) return;
+      openActionMenu({
+        title: draft.name || "ルーティン",
+        items: [
+          {
+            label: "このルーティンを削除",
+            variant: "danger",
+            onSelect: () => actions.onDelete?.(draft.id),
+          },
+        ],
+      });
+    });
+
+    const duplicateMedAt = (idx) => {
+      if (isRemoving) return;
+      syncInputsFromDom();
+      const target = draft.medications[idx];
+      if (!target) return;
+      const cloned = cloneMedicationForAdd(target);
+      draft.medications.splice(idx + 1, 0, cloned);
+      draft.medications = normalizeRoutineSteps(draft.medications);
+      pendingEffect = { type: "duplicate", ids: [cloned.id] };
+      renderForm();
+    };
+
+    const removeMedAt = (idx, card) => {
+      if (isRemoving || draft.medications.length <= 1) return;
+      const targetMed = draft.medications[idx];
+      if (!targetMed) return;
+
+      const performRemove = () => {
+        syncInputsFromDom();
+        const removeIdx = draft.medications.findIndex((m) => m.id === targetMed.id);
+        if (removeIdx !== -1 && draft.medications.length > 1) {
+          draft.medications.splice(removeIdx, 1);
+        }
+        draft.medications = normalizeRoutineSteps(draft.medications);
+        isRemoving = false;
+        renderForm();
+      };
+
+      if (!card) {
+        performRemove();
+        return;
+      }
+
+      // 枠を上下に縮小して消した後に配列から除外して再描画
+      isRemoving = true;
+      let done = false;
+      const onTransitionEnd = (e) => {
+        if (e.target === card && e.propertyName === "height") {
+          finishRemove();
+        }
+      };
+      const finishRemove = () => {
+        if (done) return;
+        done = true;
+        card.removeEventListener("transitionend", onTransitionEnd);
+        performRemove();
+      };
+
+      card.style.height = `${card.offsetHeight}px`;
+      card.classList.add("med-card-removing");
+      void card.offsetHeight;
+      requestAnimationFrame(() => {
+        card.classList.add("is-collapsing");
+        card.style.height = "0px";
+      });
+      card.addEventListener("transitionend", onTransitionEnd);
+      setTimeout(finishRemove, 600);
+    };
+
+    container.querySelectorAll('[data-action="med-menu"]').forEach((btn) => {
       btn.addEventListener("click", () => {
         if (isRemoving) return;
         syncInputsFromDom();
         const idx = Number(btn.dataset.medIdx);
-        const target = draft.medications[idx];
-        if (!target) return;
-        const cloned = cloneMedicationForAdd(target);
-        draft.medications.splice(idx + 1, 0, cloned);
-        draft.medications = normalizeRoutineSteps(draft.medications);
-        pendingEffect = { type: "duplicate", ids: [cloned.id] };
-        renderForm();
-      });
-    });
-
-    container.querySelectorAll('[data-action="remove-med"]').forEach((btn) => {
-      btn.addEventListener("click", () => {
-        if (isRemoving || draft.medications.length <= 1) return;
-        const idx = Number(btn.dataset.medIdx);
         const targetMed = draft.medications[idx];
         if (!targetMed) return;
-
         const card = btn.closest(".med-card");
-        const performRemove = () => {
-          syncInputsFromDom();
-          const removeIdx = draft.medications.findIndex((m) => m.id === targetMed.id);
-          if (removeIdx !== -1 && draft.medications.length > 1) {
-            draft.medications.splice(removeIdx, 1);
-          }
-          draft.medications = normalizeRoutineSteps(draft.medications);
-          isRemoving = false;
-          renderForm();
-        };
-
-        if (!card) {
-          performRemove();
-          return;
-        }
-
-        // 枠を上下に縮小して消した後に配列から除外して再描画
-        isRemoving = true;
-        let done = false;
-        const onTransitionEnd = (e) => {
-          if (e.target === card && e.propertyName === "height") {
-            finishRemove();
-          }
-        };
-        const finishRemove = () => {
-          if (done) return;
-          done = true;
-          card.removeEventListener("transitionend", onTransitionEnd);
-          performRemove();
-        };
-
-        card.style.height = `${card.offsetHeight}px`;
-        card.classList.add("med-card-removing");
-        void card.offsetHeight;
-        requestAnimationFrame(() => {
-          card.classList.add("is-collapsing");
-          card.style.height = "0px";
+        openActionMenu({
+          title: `薬 ${idx + 1}`,
+          subtitle: targetMed.name || "薬名未入力",
+          items: [
+            {
+              label: "この薬を複製",
+              variant: "secondary",
+              onSelect: () => duplicateMedAt(idx),
+            },
+            {
+              label: "この薬を削除",
+              variant: "danger",
+              disabled: draft.medications.length <= 1,
+              onSelect: () => removeMedAt(idx, card),
+            },
+          ],
         });
-        card.addEventListener("transitionend", onTransitionEnd);
-        setTimeout(finishRemove, 600);
       });
     });
 
@@ -458,6 +497,7 @@ function openDurationDialog(step, onConfirm) {
   const useMinDefault = initialSec >= 60 && initialSec % 6 === 0;
   const currentUnit = useMinDefault ? "min" : "sec";
   const currentValue = useMinDefault ? String(initialSec / 60) : String(initialSec);
+  const presetSecondsSet = new Set([0, ...DURATION_TEMPLATES.map((tpl) => tpl.seconds)]);
 
   const backdrop = document.createElement("div");
   backdrop.className = "modal-backdrop";
@@ -465,13 +505,14 @@ function openDurationDialog(step, onConfirm) {
     <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="duration-modal-title">
       <h2 id="duration-modal-title">${escapeHtml(step.label || getStepTypeTitle(step.type))} の時間設定</h2>
       <div class="modal-section">
-        <div class="field-label">テンプレートから選択</div>
-        <div class="template-grid">
-          <button type="button" class="btn btn-chip" data-tpl-sec="0">0秒（省略）</button>
+        <label class="field-label" for="duration-preset-select">よく使う時間</label>
+        <select id="duration-preset-select" class="select-input">
+          <option value="">手入力（カスタム）</option>
+          <option value="0" ${initialSec === 0 ? "selected" : ""}>0秒（省略）</option>
           ${DURATION_TEMPLATES.map(
-            (tpl) => `<button type="button" class="btn btn-chip" data-tpl-sec="${tpl.seconds}">${tpl.label}</button>`
+            (tpl) => `<option value="${tpl.seconds}" ${initialSec === tpl.seconds ? "selected" : ""}>${tpl.label}</option>`
           ).join("")}
-        </div>
+        </select>
       </div>
       <div class="modal-section">
         <label class="field-label" for="manual-duration-value">手入力（数値 ＋ 秒／分）</label>
@@ -493,42 +534,46 @@ function openDurationDialog(step, onConfirm) {
 
   document.body.appendChild(backdrop);
 
+  const presetSelect = backdrop.querySelector("#duration-preset-select");
   const valueInput = backdrop.querySelector("#manual-duration-value");
   const unitSelect = backdrop.querySelector("#manual-duration-unit");
   const previewEl = backdrop.querySelector("#duration-preview");
   const okBtn = backdrop.querySelector("#btn-duration-ok");
 
-  const updatePreview = () => {
+  const updatePreview = (syncPreset = true) => {
     const sec = parseDurationInput(valueInput.value, unitSelect.value);
     if (sec === null) {
       previewEl.textContent = "0秒以上の整数（分指定時は秒換算で整数）を入力してください";
       previewEl.classList.add("is-error");
       okBtn.disabled = true;
+      if (syncPreset && presetSelect) presetSelect.value = "";
       return null;
     }
     previewEl.textContent = `設定時間: ${formatDuration(sec)}（${sec}秒）`;
     previewEl.classList.remove("is-error");
     okBtn.disabled = false;
+    if (syncPreset && presetSelect) {
+      presetSelect.value = presetSecondsSet.has(sec) ? String(sec) : "";
+    }
     return sec;
   };
 
-  // テンプレートボタン押下で手入力欄へ反映
-  backdrop.querySelectorAll("[data-tpl-sec]").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const sec = Number(btn.dataset.tplSec);
-      if (sec >= 60 && sec % 6 === 0) {
-        unitSelect.value = "min";
-        valueInput.value = String(sec / 60);
-      } else {
-        unitSelect.value = "sec";
-        valueInput.value = String(sec);
-      }
-      updatePreview();
-    });
+  // よく使う時間セレクト変更時に手入力欄へ反映
+  presetSelect?.addEventListener("change", () => {
+    if (presetSelect.value === "") return;
+    const sec = Number(presetSelect.value);
+    if (sec >= 60 && sec % 6 === 0) {
+      unitSelect.value = "min";
+      valueInput.value = String(sec / 60);
+    } else {
+      unitSelect.value = "sec";
+      valueInput.value = String(sec);
+    }
+    updatePreview(false);
   });
 
-  valueInput.addEventListener("input", updatePreview);
-  unitSelect.addEventListener("change", updatePreview);
+  valueInput.addEventListener("input", () => updatePreview(true));
+  unitSelect.addEventListener("change", () => updatePreview(true));
 
   const close = () => backdrop.remove();
 
@@ -538,13 +583,13 @@ function openDurationDialog(step, onConfirm) {
   });
 
   okBtn.addEventListener("click", () => {
-    const sec = updatePreview();
+    const sec = updatePreview(true);
     if (sec === null) return;
     close();
     onConfirm(sec);
   });
 
-  updatePreview();
+  updatePreview(true);
   valueInput.focus();
 }
 
@@ -623,14 +668,14 @@ function openMedicationPickerDialog(existingRoutines, onConfirm) {
 
     backdrop.innerHTML = `
       <div class="modal-dialog modal-dialog-wide" role="dialog" aria-modal="true" aria-labelledby="picker-modal-title">
-        <h2 id="picker-modal-title">テンプレート／既存から行程を追加</h2>
+        <h2 id="picker-modal-title">よく使う薬／登録済みから追加</h2>
         <div class="modal-tabs" role="tablist">
-          <button type="button" role="tab" aria-selected="${activeTab === "templates"}" class="modal-tab ${activeTab === "templates" ? "is-active" : ""}" data-tab="templates">定義済みテンプレート</button>
+          <button type="button" role="tab" aria-selected="${activeTab === "templates"}" class="modal-tab ${activeTab === "templates" ? "is-active" : ""}" data-tab="templates">よく使う薬</button>
           <button type="button" role="tab" aria-selected="${activeTab === "existing"}" class="modal-tab ${activeTab === "existing" ? "is-active" : ""}" data-tab="existing">登録済みの薬 (${existingItems.length})</button>
         </div>
         ${
           activeTab === "templates"
-            ? `<p class="muted-text" style="margin:0 0 10px; font-size:0.84rem;">※ テンプレートの時間は一般的な目安です。医師・薬剤師の指示がある場合はそちらを優先してください。</p>`
+            ? `<p class="muted-text" style="margin:0 0 10px; font-size:0.84rem;">※ よく使う薬の時間は一般的な目安です。医師・薬剤師の指示がある場合はそちらを優先してください。</p>`
             : ""
         }
         ${

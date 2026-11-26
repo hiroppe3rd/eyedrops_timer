@@ -33,6 +33,18 @@ const appState = {
   cleanupCurrentView: null,
 };
 
+/** ルーティン削除の共通処理 */
+function deleteRoutineById(id) {
+  const target = appState.data.routines.find((r) => r.id === id);
+  if (!target) return false;
+  if (!window.confirm(`「${target.name}」を削除しますか？`)) return false;
+  appState.data.routines = appState.data.routines
+    .filter((r) => r.id !== id)
+    .map((r, idx) => ({ ...r, order: idx }));
+  saveAppData(appState.data);
+  return true;
+}
+
 /** 画面描画 */
 function render() {
   if (!appContainer) return;
@@ -58,14 +70,7 @@ function render() {
         render();
       },
       onDelete: (id) => {
-        const target = appState.data.routines.find((r) => r.id === id);
-        if (!target) return;
-        if (!window.confirm(`「${target.name}」を削除しますか？`)) return;
-        appState.data.routines = appState.data.routines
-          .filter((r) => r.id !== id)
-          .map((r, idx) => ({ ...r, order: idx }));
-        saveAppData(appState.data);
-        render();
+        if (deleteRoutineById(id)) render();
       },
       onReorder: (orderedIds) => {
         const orderMap = new Map(orderedIds.map((id, idx) => [id, idx]));
@@ -113,6 +118,13 @@ function render() {
         appState.editingRoutine = null;
         appState.currentScreen = "SCR-01";
         render();
+      },
+      onDelete: (id) => {
+        if (deleteRoutineById(id)) {
+          appState.editingRoutine = null;
+          appState.currentScreen = "SCR-01";
+          render();
+        }
       },
       onSave: (savedRoutine) => {
         const now = new Date().toISOString();
