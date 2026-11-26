@@ -16,6 +16,7 @@ import {
   extractExistingMedications,
   formatDateTime,
   formatDuration,
+  getStepLabel,
   normalizeRoutineSteps,
   parseDurationInput,
   removePendingResult,
@@ -25,6 +26,7 @@ import { SCHEMA_VERSION, loadAppData, saveAppData } from "../public/js/storage.j
 import { buildExecutionQueue, createTimerRunner, formatClock } from "../public/js/timerEngine.js";
 import {
   SpeechGuideController,
+  buildRoutineCompleteSpeech,
   buildStepCompleteSpeech,
   buildStepStartSpeech,
   normalizeSpeechText,
@@ -95,6 +97,11 @@ await test("時間テンプレート11種・手入力換算・バリデーショ
   });
   rt.medications = normalizeRoutineSteps(rt.medications);
   assert.equal(rt.medications[0].steps.length, 3);
+  // 工程項目名が固定ラベルへ正規化されること
+  assert.equal(getStepLabel(STEP_TYPES.PREPARE), "準備");
+  assert.equal(getStepLabel(STEP_TYPES.MEDITATION), "点眼後の閉眼");
+  assert.equal(getStepLabel(STEP_TYPES.WAIT), "次の点眼までの間隔");
+  assert.equal(rt.medications[1].steps[1].label, "点眼後の閉眼");
   // 最後の薬に待機工程がないこと
   assert.equal(rt.medications[1].steps.length, 2);
   assert.equal(validateRoutine(rt).length, 0);
@@ -242,11 +249,15 @@ await test("タイマーの実行・5秒未満カウントダウン・背景補�
 
     const countdowns = [];
     const completed = [];
+    const completedLastFlags = [];
     let allDone = null;
 
     const runner = createTimerRunner(queue, {
       onCountdown: (sec) => countdowns.push(sec),
-      onStepComplete: (step) => completed.push(step.medName + ":" + step.type),
+      onStepComplete: (step, _skipped, isLastStep) => {
+        completed.push(step.medName + ":" + step.type);
+        completedLastFlags.push(isLastStep);
+      },
       onAllComplete: (res) => {
         allDone = res;
       },
@@ -279,6 +290,8 @@ await test("タイマーの実行・5秒未満カウントダウン・背景補�
     fakeNow += 12000;
     runner.syncNow();
     assert.ok(allDone !== null);
+    assert.equal(completedLastFlags[0], false);
+    assert.equal(completedLastFlags[completedLastFlags.length - 1], true);
   } finally {
     Date.now = origNow;
   }
@@ -295,18 +308,30 @@ await test("Google 日本語優先選択と点眼ガイド文生成", () => {
   assert.equal(resolvePreferredVoice(voices, "存在しない音声").name, "Google 日本語");
 
   const startTxt = buildStepStartSpeech(
-    { medIndex: 0, medName: "ヒアルロン酸", type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
+    { medIndex: 0, medName: "ヒアルロン酸", type: STEP_TYPES.MEDITATION, label: "点眼後の閉眼", durationSec: 60 },
     { medIndex: 0, type: STEP_TYPES.PREPARE }
   );
-  assert.equal(startTxt, "ヒアルロン酸 を点眼してください。続けて、直後の閉眼、1分、開始。");
-  assert.equal(buildStepCompleteSpeech({ label: "準備" }), "準備、完了。");
+  assert.equal(startTxt, "ヒアルロン酸 を点眼して、目を閉じてください。1分、開始。");
   assert.equal(
-    normalizeSpeechText(startTxt),
-    "ヒアルロン酸 を点眼してください。続けて、直後のへいがん、1分、開始。"
+    buildStepStartSpeech(
+      { medIndex: 0, medName: "ヒアルロン酸", isFirstStepOfMed: true, type: STEP_TYPES.MEDITATION, label: "点眼後の閉眼", durationSec: 60 },
+      null
+    ),
+    "ヒアルロン酸、目を閉じてください。1分、開始。"
+  );
+  assert.equal(buildStepCompleteSpeech({ type: STEP_TYPES.PREPARE, label: "準備" }), "準備、完了。");
+  assert.equal(buildStepCompleteSpeech({ type: STEP_TYPES.MEDITATION, label: "点眼後の閉眼" }), "目を開けてください。");
+  assert.equal(
+    buildRoutineCompleteSpeech({ name: "朝の点眼" }),
+    "朝の点眼が完了しました。目を開けて大丈夫です。おつかれさまでした。"
+  );
+  assert.equal(
+    buildRoutineCompleteSpeech({ name: "" }),
+    "ルーティンが完了しました。目を開けて大丈夫です。おつかれさまでした。"
   );
   assert.equal(normalizeSpeechText("閉眼、完了。"), "へいがん、完了。");
 
-  // 字幕表示は元の表記を維持し、発話テキストのみ読み補正されること
+  // 字幕表示と発話テキストの検証
   const origWindow = globalThis.window;
   const origUtterance = globalThis.SpeechSynthesisUtterance;
   try {
@@ -329,7 +354,7 @@ await test("Google 日本語優先選択と点眼ガイド文生成", () => {
     controller.onSubtitle = (txt) => subtitleTexts.push(txt);
     controller.speak(startTxt);
     assert.deepEqual(subtitleTexts, [startTxt]);
-    assert.deepEqual(spokenTexts, ["ヒアルロン酸 を点眼してください。続けて、直後のへいがん、1分、開始。"]);
+    assert.deepEqual(spokenTexts, ["ヒアルロン酸 を点眼して、目を閉じてください。1分、開始。"]);
   } finally {
     globalThis.window = origWindow;
     globalThis.SpeechSynthesisUtterance = origUtterance;

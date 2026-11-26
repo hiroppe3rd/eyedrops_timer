@@ -1,5 +1,5 @@
 // タイマー実行エンジン（時刻差分計算・Wake Lock管理）
-import { STEP_TYPES, createId } from "./models.js";
+import { STEP_TYPES, createId, getStepLabel } from "./models.js";
 
 /** ルーティンから実行工程キューを生成（0秒工程は除外） */
 export function buildExecutionQueue(routine) {
@@ -29,7 +29,7 @@ export function buildExecutionQueue(routine) {
         medNote: typeof med.note === "string" ? med.note : "",
         isFirstStepOfMed,
         type: step.type,
-        label: step.label,
+        label: getStepLabel(step.type),
         durationSec,
         ...(isWait ? { intervalSec: rawDurationSec } : {}),
       });
@@ -136,7 +136,7 @@ export function createTimerRunner(queue, callbacks) {
         if (effectiveStep.type === STEP_TYPES.MEDITATION) {
           actualMeditationMsByMed.set(effectiveStep.medIndex, targetMs);
         }
-        callbacks.onStepComplete?.(effectiveStep, true);
+        callbacks.onStepComplete?.(effectiveStep, true, index === queue.length - 1);
       }
       startStep(index + 1, Math.abs(durationMs));
       return;
@@ -182,7 +182,7 @@ export function createTimerRunner(queue, callbacks) {
       if (completedStep?.type === STEP_TYPES.MEDITATION) {
         actualMeditationMsByMed.set(completedStep.medIndex, completedStep.durationSec * 1000);
       }
-      callbacks.onStepComplete?.(completedStep, false);
+      callbacks.onStepComplete?.(completedStep, false, currentIndex === queue.length - 1);
       startStep(currentIndex + 1, Math.abs(remainingMs));
       return;
     }

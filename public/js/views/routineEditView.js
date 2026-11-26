@@ -12,6 +12,7 @@ import {
   escapeHtml,
   extractExistingMedications,
   formatDuration,
+  getStepLabel,
   normalizeRoutineSteps,
   parseDurationInput,
   validateRoutine,
@@ -41,7 +42,7 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
         const stepsHtml = med.steps
           .map((step) => {
             if (isLast && step.type === STEP_TYPES.WAIT) return "";
-            const stepTitle = getStepTypeTitle(step.type);
+            const stepTitle = getStepLabel(step.type);
             let waitHintHtml = "";
             if (step.type === STEP_TYPES.WAIT) {
               const waitSec = Number(step.durationSec) || 0;
@@ -53,16 +54,8 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
             }
             return `
               <div class="step-field">
-                <label class="field-label">${stepTitle}（表示名 / 時間）</label>
                 <div class="step-input-row">
-                  <input
-                    type="text"
-                    class="text-input step-label-input"
-                    data-med-idx="${medIdx}"
-                    data-step-type="${step.type}"
-                    value="${escapeHtml(step.label)}"
-                    placeholder="${stepTitle}"
-                  >
+                  <span class="step-fixed-label">${escapeHtml(stepTitle)}</span>
                   <button
                     type="button"
                     class="btn btn-duration"
@@ -249,13 +242,6 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
       if (draft.medications[idx]) {
         draft.medications[idx].note = input.value;
       }
-    });
-
-    container.querySelectorAll(".step-label-input").forEach((input) => {
-      const idx = Number(input.dataset.medIdx);
-      const type = input.dataset.stepType;
-      const step = draft.medications[idx]?.steps.find((s) => s.type === type);
-      if (step) step.label = input.value;
     });
   };
 
@@ -444,14 +430,6 @@ function captureCardRects(listEl) {
   return rects;
 }
 
-/** 工程種別の表示ラベル */
-function getStepTypeTitle(type) {
-  if (type === STEP_TYPES.PREPARE) return "準備";
-  if (type === STEP_TYPES.MEDITATION) return "直後の閉眼";
-  if (type === STEP_TYPES.WAIT) return "次の点眼までの間隔";
-  return "工程";
-}
-
 /** 点眼薬のドラッグ＆ドロップ並び替え */
 function setupMedicationDragAndDrop(listEl, onMove) {
   if (!listEl) return;
@@ -503,7 +481,7 @@ function openDurationDialog(step, onConfirm) {
   backdrop.className = "modal-backdrop";
   backdrop.innerHTML = `
     <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="duration-modal-title">
-      <h2 id="duration-modal-title">${escapeHtml(step.label || getStepTypeTitle(step.type))} の時間設定</h2>
+      <h2 id="duration-modal-title">${escapeHtml(getStepLabel(step.type))} の時間設定</h2>
       <div class="modal-section">
         <label class="field-label" for="duration-preset-select">よく使う時間</label>
         <select id="duration-preset-select" class="select-input">
@@ -606,7 +584,7 @@ function openMedicationPickerDialog(existingRoutines, onConfirm) {
 
   const formatStepsSummary = (steps) =>
     (steps || [])
-      .map((s) => `${getStepTypeTitle(s.type)} ${formatDuration(s.durationSec)}`)
+      .map((s) => `${getStepLabel(s.type)} ${formatDuration(s.durationSec)}`)
       .join(" / ");
 
   const renderDialog = () => {

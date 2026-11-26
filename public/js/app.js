@@ -8,6 +8,7 @@ import {
 import { loadAppData, saveAppData } from "./storage.js";
 import {
   SpeechGuideController,
+  buildRoutineCompleteSpeech,
   buildStepCompleteSpeech,
   buildStepStartSpeech,
 } from "./speech.js";
@@ -210,8 +211,8 @@ function render() {
         // 前の発話が再生中の場合はキャンセルで割り込む
         speech.speak(String(sec), { interrupt: true, fallbackTone: "tick" });
       },
-      onStepComplete: (step, skippedByBackground) => {
-        if (skippedByBackground) return;
+      onStepComplete: (step, skippedByBackground, isLastStep) => {
+        if (skippedByBackground || isLastStep) return;
         speech.speak(buildStepCompleteSpeech(step), {
           interrupt: false,
           fallbackTone: "complete",
@@ -231,6 +232,10 @@ function render() {
       },
       onComplete: (result) => {
         speech.onSubtitle = null;
+        speech.speak(buildRoutineCompleteSpeech(routine), {
+          interrupt: false,
+          fallbackTone: "routineComplete",
+        });
         // 完了履歴を未保存状態で一時保存
         appState.data.pendingResults.unshift(result);
         saveAppData(appState.data);

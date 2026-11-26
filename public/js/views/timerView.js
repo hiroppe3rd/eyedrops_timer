@@ -148,8 +148,8 @@ export function renderTimerView(container, routine, actions) {
       flashCard();
       actions.onCountdown?.(sec, step);
     },
-    onStepComplete: (step, skippedByBackground) => {
-      actions.onStepComplete?.(step, skippedByBackground);
+    onStepComplete: (step, skippedByBackground, isLastStep) => {
+      actions.onStepComplete?.(step, skippedByBackground, isLastStep);
     },
     onPause: () => {
       actions.onPause?.();

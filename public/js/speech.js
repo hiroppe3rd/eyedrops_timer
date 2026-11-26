@@ -158,6 +158,28 @@ export class SpeechGuideController {
     }
 
     const now = this.audioCtx.currentTime;
+    if (kind === "routineComplete") {
+      // 全工程完了用の3音上昇チャイム
+      const notes = [
+        { freq: 523.25, delay: 0, dur: 0.14 },
+        { freq: 659.25, delay: 0.11, dur: 0.14 },
+        { freq: 783.99, delay: 0.22, dur: 0.32 },
+      ];
+      notes.forEach(({ freq, delay, dur }) => {
+        const noteOsc = this.audioCtx.createOscillator();
+        const noteGain = this.audioCtx.createGain();
+        noteOsc.connect(noteGain);
+        noteGain.connect(this.audioCtx.destination);
+        const startAt = now + delay;
+        noteOsc.frequency.setValueAtTime(freq, startAt);
+        noteGain.gain.setValueAtTime(0.12, startAt);
+        noteGain.gain.exponentialRampToValueAtTime(0.001, startAt + dur);
+        noteOsc.start(startAt);
+        noteOsc.stop(startAt + dur);
+      });
+      return;
+    }
+
     const osc = this.audioCtx.createOscillator();
     const gain = this.audioCtx.createGain();
     osc.connect(gain);
@@ -194,9 +216,16 @@ export function buildStepStartSpeech(step, previousStep) {
     previousStep.medIndex === step.medIndex &&
     previousStep.type === STEP_TYPES.PREPARE;
 
-  if (isAfterPrepare) {
-    return `${step.medName} を点眼してください。続けて、${step.label}、${durationText}、開始。`;
+  if (step.type === STEP_TYPES.MEDITATION) {
+    if (isAfterPrepare) {
+      return `${step.medName} を点眼して、目を閉じてください。${durationText}、開始。`;
+    }
+    if (step.isFirstStepOfMed) {
+      return `${step.medName}、目を閉じてください。${durationText}、開始。`;
+    }
+    return `目を閉じてください。${durationText}、開始。`;
   }
+
   if (step.isFirstStepOfMed) {
     return `${step.medName}、${step.label}、${durationText}、開始。`;
   }
@@ -205,5 +234,17 @@ export function buildStepStartSpeech(step, previousStep) {
 
 /** 工程完了時の読み上げ文を生成 */
 export function buildStepCompleteSpeech(step) {
+  if (step?.type === STEP_TYPES.MEDITATION) {
+    return "目を開けてください。";
+  }
   return `${step.label}、完了。`;
+}
+
+/** ルーティン全工程完了時の読み上げ文を生成 */
+export function buildRoutineCompleteSpeech(routine) {
+  const name = (routine?.name || "").trim();
+  if (name) {
+    return `${name}が完了しました。目を開けて大丈夫です。おつかれさまでした。`;
+  }
+  return "ルーティンが完了しました。目を開けて大丈夫です。おつかれさまでした。";
 }

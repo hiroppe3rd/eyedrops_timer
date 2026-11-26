@@ -6,6 +6,17 @@ export const STEP_TYPES = {
   WAIT: "wait",
 };
 
+export const STEP_LABELS = {
+  [STEP_TYPES.PREPARE]: "準備",
+  [STEP_TYPES.MEDITATION]: "点眼後の閉眼",
+  [STEP_TYPES.WAIT]: "次の点眼までの間隔",
+};
+
+/** 工程種別の固定ラベルを取得 */
+export function getStepLabel(type) {
+  return STEP_LABELS[type] || "工程";
+}
+
 export const DURATION_TEMPLATES = [
   { label: "5秒", seconds: 5 },
   { label: "10秒", seconds: 10 },
@@ -28,9 +39,9 @@ export const MEDICATION_TEMPLATES = [
     name: "レボフロキサシン",
     note: "術前・術後 1日4回",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
+      { type: STEP_TYPES.PREPARE, label: STEP_LABELS[STEP_TYPES.PREPARE], durationSec: 10 },
+      { type: STEP_TYPES.MEDITATION, label: STEP_LABELS[STEP_TYPES.MEDITATION], durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: STEP_LABELS[STEP_TYPES.WAIT], durationSec: 300 },
     ],
   },
   {
@@ -39,9 +50,9 @@ export const MEDICATION_TEMPLATES = [
     name: "ブロムフェナクNa",
     note: "術前・術後 1日2回",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
+      { type: STEP_TYPES.PREPARE, label: STEP_LABELS[STEP_TYPES.PREPARE], durationSec: 10 },
+      { type: STEP_TYPES.MEDITATION, label: STEP_LABELS[STEP_TYPES.MEDITATION], durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: STEP_LABELS[STEP_TYPES.WAIT], durationSec: 300 },
     ],
   },
   {
@@ -50,9 +61,9 @@ export const MEDICATION_TEMPLATES = [
     name: "サンベタゾン",
     note: "術後 1日4回",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
+      { type: STEP_TYPES.PREPARE, label: STEP_LABELS[STEP_TYPES.PREPARE], durationSec: 10 },
+      { type: STEP_TYPES.MEDITATION, label: STEP_LABELS[STEP_TYPES.MEDITATION], durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: STEP_LABELS[STEP_TYPES.WAIT], durationSec: 300 },
     ],
   },
   {
@@ -61,9 +72,9 @@ export const MEDICATION_TEMPLATES = [
     name: "ミドリンＰ",
     note: "手術直前",
     steps: [
-      { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 10 },
-      { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 120 },
-      { type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 },
+      { type: STEP_TYPES.PREPARE, label: STEP_LABELS[STEP_TYPES.PREPARE], durationSec: 10 },
+      { type: STEP_TYPES.MEDITATION, label: STEP_LABELS[STEP_TYPES.MEDITATION], durationSec: 120 },
+      { type: STEP_TYPES.WAIT, label: STEP_LABELS[STEP_TYPES.WAIT], durationSec: 300 },
     ],
   },
 ];
@@ -79,11 +90,11 @@ export function createId(prefix) {
 /** 新規点眼薬の初期データを生成 */
 export function createDefaultMedication(isLast = false) {
   const steps = [
-    { type: STEP_TYPES.PREPARE, label: "準備", durationSec: 15 },
-    { type: STEP_TYPES.MEDITATION, label: "直後の閉眼", durationSec: 60 },
+    { type: STEP_TYPES.PREPARE, label: getStepLabel(STEP_TYPES.PREPARE), durationSec: 15 },
+    { type: STEP_TYPES.MEDITATION, label: getStepLabel(STEP_TYPES.MEDITATION), durationSec: 60 },
   ];
   if (!isLast) {
-    steps.push({ type: STEP_TYPES.WAIT, label: "次の点眼までの間隔", durationSec: 300 });
+    steps.push({ type: STEP_TYPES.WAIT, label: getStepLabel(STEP_TYPES.WAIT), durationSec: 300 });
   }
   return {
     id: createId("med"),
@@ -146,22 +157,22 @@ export function normalizeRoutineSteps(medications) {
     const isLast = idx === lastIndex;
     const prepare = med.steps.find((s) => s.type === STEP_TYPES.PREPARE) || {
       type: STEP_TYPES.PREPARE,
-      label: "準備",
       durationSec: 15,
     };
     const meditation = med.steps.find((s) => s.type === STEP_TYPES.MEDITATION) || {
       type: STEP_TYPES.MEDITATION,
-      label: "直後の閉眼",
       durationSec: 60,
     };
-    const steps = [{ ...prepare }, { ...meditation }];
+    const steps = [
+      { ...prepare, label: getStepLabel(STEP_TYPES.PREPARE) },
+      { ...meditation, label: getStepLabel(STEP_TYPES.MEDITATION) },
+    ];
     if (!isLast) {
       const wait = med.steps.find((s) => s.type === STEP_TYPES.WAIT) || {
         type: STEP_TYPES.WAIT,
-        label: "次の点眼までの間隔",
         durationSec: 300,
       };
-      steps.push({ ...wait });
+      steps.push({ ...wait, label: getStepLabel(STEP_TYPES.WAIT) });
     }
     return {
       ...med,
@@ -209,12 +220,9 @@ export function validateRoutine(routine) {
     const isLast = idx === lastIndex;
     (med.steps || []).forEach((step) => {
       if (isLast && step.type === STEP_TYPES.WAIT) return;
-      if (!step.label || !step.label.trim()) {
-        errors.push(`薬${medNum}の工程表示名を入力してください。`);
-      }
       const sec = step.durationSec;
       if (!Number.isInteger(sec) || sec < 0) {
-        errors.push(`薬${medNum}（${step.label || step.type}）の時間は0秒以上の整数で設定してください。`);
+        errors.push(`薬${medNum}（${getStepLabel(step.type)}）の時間は0秒以上の整数で設定してください。`);
       }
     });
   });
@@ -254,24 +262,25 @@ export function cloneMedicationForAdd(source) {
   const srcSteps = Array.isArray(source?.steps) ? source.steps : [];
   const prepare = srcSteps.find((s) => s.type === STEP_TYPES.PREPARE) || {
     type: STEP_TYPES.PREPARE,
-    label: "準備",
     durationSec: 15,
   };
   const meditation = srcSteps.find((s) => s.type === STEP_TYPES.MEDITATION) || {
     type: STEP_TYPES.MEDITATION,
-    label: "直後の閉眼",
     durationSec: 60,
   };
   const wait = srcSteps.find((s) => s.type === STEP_TYPES.WAIT) || {
     type: STEP_TYPES.WAIT,
-    label: "次の点眼までの間隔",
     durationSec: 300,
   };
   return {
     id: createId("med"),
     name: typeof source?.name === "string" ? source.name : "",
     note: typeof source?.note === "string" ? source.note : "",
-    steps: [{ ...prepare }, { ...meditation }, { ...wait }],
+    steps: [
+      { ...prepare, label: getStepLabel(STEP_TYPES.PREPARE) },
+      { ...meditation, label: getStepLabel(STEP_TYPES.MEDITATION) },
+      { ...wait, label: getStepLabel(STEP_TYPES.WAIT) },
+    ],
   };
 }
 
