@@ -32,6 +32,23 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
   let pendingEffect = null;
   let isRemoving = false;
 
+  // 変更検知用のスナップショット生成
+  const serializeDraft = (target) =>
+    JSON.stringify({
+      name: target.name || "",
+      medications: (target.medications || []).map((m) => ({
+        id: m.id,
+        name: m.name || "",
+        note: m.note || "",
+        steps: (m.steps || []).map((s) => ({
+          type: s.type,
+          durationSec: Number(s.durationSec) || 0,
+        })),
+      })),
+    });
+
+  const initialSnapshot = serializeDraft(draft);
+
   const renderForm = () => {
     const medsHtml = draft.medications
       .map((med, medIdx) => {
@@ -415,6 +432,11 @@ export function renderRoutineEditView(container, draftRoutine, isNew, actions) {
       renderForm();
     });
   };
+
+  actions.bindDirtyChecker?.(() => {
+    syncInputsFromDom();
+    return serializeDraft(draft) !== initialSnapshot;
+  });
 
   renderForm();
 }

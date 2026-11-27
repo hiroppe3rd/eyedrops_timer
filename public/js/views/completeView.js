@@ -30,6 +30,8 @@ export function renderCompleteView(container, result, actions) {
   let errorMessage = "";
   const templateUrl = buildGoogleCalendarTemplateUrl(result);
 
+  actions.bindSavingChecker?.(() => currentStatus === "saving");
+
   const renderContent = () => {
     const isSaved = currentStatus === "saved";
     const isSaving = currentStatus === "saving";

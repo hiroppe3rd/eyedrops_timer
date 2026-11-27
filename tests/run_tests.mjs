@@ -46,6 +46,7 @@ import {
   isStandaloneDisplayMode,
   shouldShowInstallButton,
 } from "../public/js/pwaInstall.js";
+import { createNavigationGuard } from "../public/js/navigationGuard.js";
 
 let passed = 0;
 async function test(name, fn) {
@@ -720,6 +721,88 @@ await test("閉眼の完了・途中スキップに応じて待機時間が動�
   } finally {
     Date.now = origNow;
   }
+});
+
+// 12. navigationGuard.js の検証
+await test("大事な場面のみ beforeunload・popstate で確認を挟み、キャンセル時に元の履歴へ戻ること", () => {
+  const listeners = new Map();
+  const stack = [{ screen: "init" }];
+  let cursor = 0;
+
+  const mockWindow = {
+    history: {
+      replaceState: (state) => {
+        stack[cursor] = state;
+      },
+      pushState: (state) => {
+        stack.splice(cursor + 1);
+        stack.push(state);
+        cursor = stack.length - 1;
+      },
+      go: (delta) => {
+        cursor += delta;
+        const handler = listeners.get("popstate");
+        handler?.({ state: stack[cursor] });
+      },
+    },
+    addEventListener: (type, fn) => listeners.set(type, fn),
+    removeEventListener: (type) => listeners.delete(type),
+  };
+
+  let guardState = { shouldConfirm: false, currentScreen: "SCR-01" };
+  let confirmResult = false;
+  let confirmCount = 0;
+  const navigated = [];
+
+  const guard = createNavigationGuard({
+    win: mockWindow,
+    getGuardState: () => guardState,
+    onNavigate: (screen) => navigated.push(screen),
+    confirmFn: () => {
+      confirmCount += 1;
+      return confirmResult;
+    },
+  });
+
+  guard.init("SCR-01");
+  assert.equal(stack[0].screen, "SCR-01");
+  assert.equal(stack[0].seq, 0);
+
+  // ガード不要時は beforeunload で抑止しない
+  let prevented = false;
+  const beforeUnloadHandler = listeners.get("beforeunload");
+  beforeUnloadHandler({ preventDefault: () => (prevented = true), returnValue: undefined });
+  assert.equal(prevented, false);
+
+  // SCR-04（タイマー実行中）へ遷移しガード有効化
+  guard.push("SCR-04", { routineId: "r1" });
+  guardState = { shouldConfirm: true, message: "中断しますか？", currentScreen: "SCR-04" };
+  assert.equal(guard.getCurrentSeq(), 1);
+
+  // ガード有効時は beforeunload で抑止する
+  const unloadEvent = { preventDefault: () => (prevented = true), returnValue: undefined };
+  beforeUnloadHandler(unloadEvent);
+  assert.equal(prevented, true);
+  assert.equal(unloadEvent.returnValue, "");
+
+  // 戻る操作 → キャンセル時は確認が呼ばれ、元の seq=1 に押し戻される
+  confirmResult = false;
+  mockWindow.history.go(-1);
+  assert.equal(confirmCount, 1);
+  assert.equal(guard.getCurrentSeq(), 1);
+  assert.equal(cursor, 1);
+  assert.equal(navigated.length, 0);
+
+  // 戻る操作 → OK時は確認後に SCR-01 へ遷移する
+  confirmResult = true;
+  mockWindow.history.go(-1);
+  assert.equal(confirmCount, 2);
+  assert.equal(guard.getCurrentSeq(), 0);
+  assert.equal(cursor, 0);
+  assert.deepEqual(navigated, ["SCR-01"]);
+
+  guard.destroy();
+  assert.equal(listeners.size, 0);
 });
 
 console.log(`\n全 ${passed} 件の検証テストが合格しました。`);

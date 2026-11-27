@@ -211,5 +211,11 @@ export function renderTimerView(container, routine, actions) {
   wakeLock.acquire();
   runner.start();
 
-  return cleanup;
+  let isTimerActive = true;
+  actions.bindActiveChecker?.(() => isTimerActive);
+
+  return () => {
+    isTimerActive = false;
+    cleanup();
+  };
 }
