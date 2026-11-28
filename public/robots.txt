@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://hiroppe3rd.co99.win/eyedrops/sitemap.xml

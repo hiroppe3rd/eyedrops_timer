@@ -6,7 +6,20 @@
   <meta name="theme-color" content="#0284c7">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <title>点眼タイマー</title>
+  <title>点眼タイマー｜音声ガイド付きで複数の目薬間隔を管理</title>
+  <meta name="description" content="複数の目薬を差すときの準備・点眼後の閉眼・次の点眼までの待機を音声ガイドで案内する無料Webタイマー。目を閉じたままカウントダウンを聴けて、Googleカレンダーへの記録やホーム画面追加（PWA）にも対応。">
+  <link rel="canonical" href="https://hiroppe3rd.co99.win/eyedrops/">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="点眼タイマー">
+  <meta property="og:title" content="点眼タイマー｜音声ガイド付きで複数の目薬間隔を管理">
+  <meta property="og:description" content="目を閉じたまま音声で次の点眼タイミングがわかる無料Webタイマー。登録不要ですぐに使えます。">
+  <meta property="og:url" content="https://hiroppe3rd.co99.win/eyedrops/">
+  <meta property="og:image" content="https://hiroppe3rd.co99.win/eyedrops/assets/icon-512.png">
+  <meta property="og:locale" content="ja_JP">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="点眼タイマー｜音声ガイド付きで複数の目薬間隔を管理">
+  <meta name="twitter:description" content="目を閉じたまま音声で次の点眼タイミングがわかる無料Webタイマー。登録不要ですぐに使えます。">
+  <meta name="twitter:image" content="https://hiroppe3rd.co99.win/eyedrops/assets/icon-512.png">
   <link rel="icon" href="./assets/icon-192.png" type="image/png">
   <link rel="apple-touch-icon" href="./assets/icon-192.png">
   <link rel="manifest" href="./manifest.webmanifest">
@@ -32,7 +45,14 @@
     </header>
 
     <!-- SPA 画面描画領域 -->
-    <main id="app" class="app-main" aria-live="polite"></main>
+    <main id="app" class="app-main" aria-live="polite">
+      <noscript>
+        <section class="card">
+          <h1>点眼タイマー</h1>
+          <p>点眼する薬と準備・閉眼・待機時間をルーティンとして登録し、音声ガイドに沿って実行できる無料Webタイマーです。ご利用にはJavaScriptを有効にしてください。</p>
+        </section>
+      </noscript>
+    </main>
 
     <footer class="app-footer">
       <p class="muted-text" style="margin:0 0 6px; font-size:0.8rem;">※ 点眼方法や間隔は、医師・薬剤師の指示がある場合はそちらを優先してください。</p>
